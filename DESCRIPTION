@@ -1,11 +1,40 @@
 Package: shapley
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Weighted Mean Shapley Values with Confidence Intervals for Machine 
+       Learning Grids and Stacked Ensembles
+Version: 0.1
+Authors@R: 
+    person("E. F. Haghish",
+           role = c("aut", "cre", "cph"),
+           email = "haghish@uio.no")
+Depends: 
+    R (>= 3.5.0),
+Description: This R package introduces an innovative method for calculating SHapley Additive exPlanations (SHAP) values 
+             for a grid of fine-tuned base-learner machine learning models as well as stacked ensembles, a strategy not 
+             previously available due to the common reliance on single best-performing models. By integrating the weighted 
+             mean SHAP values from individual base-learners comprising the ensemble or base-learners in a fine-tuned grid, 
+             the package weights SHAP contributions according to each model's performance, assessed by the Area Under the 
+             Precision-Recall Curve (AUCPR) for binary classifiers (currently implemented). It further extends this framework to 
+             implement weighted confidence intervals for these mean SHAP values, offering a more comprehensive and robust 
+             feature importance evaluation over a grid of machine learning models, instead of solely computing SHAP values for 
+             the best-performing model. This methodology is particularly beneficial for addressing the severe class imbalance 
+             (class rarity) problem by providing a transparent, generalized measure of feature importance that mitigates the 
+             risk of reporting SHAP values for an overfitted or biased model and maintains robustness under severe class imbalance,
+             where there is no universal criteria of identifying the absolute best model. Furthermore, the package implements
+             hypothesis testing to ascertain the statistical significance of SHAP values for individual features, as well as 
+             comparative significance testing of SHAP contributions between features. Additionally, it tackles a critical 
+             gap in feature selection literature by presenting criteria for the automatic identification of the most important 
+             features across model grids or stacked ensembles, eliminating the need for arbitrary determination of the 
+             number of top features to be extracted. This utility is invaluable for researchers analyzing feature significance, 
+             particularly within severely imbalanced outcomes where conventional methods fall short.
+License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
+Imports:
+    ggplot2 (>= 3.4.2),
+    h2o (>= 3.34.0.0),
+    h2otools (>= 0.3),
+    autoEnsemble (>= 0.1),
+    curl (>= 4.3.0)
+RoxygenNote: 7.2.1
+URL: https://github.com/haghish/shapley, https://www.sv.uio.no/psi/english/people/academic/haghish/
+BugReports: https://github.com/haghish/shapley/issues
