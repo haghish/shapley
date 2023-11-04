@@ -51,16 +51,16 @@
 #' @param sample_size integer. The number of observations to be sampled from the
 #'                    data set. The default is all observations provided within
 #'                    the newdata.
-#' @param normalize_to character. The default value is 'feature', specifying that
-#'                     in the normalization of the SHAP values, the maximum confidence
-#'                     interval of the weighted SHAP values should be equal to
-#'                     "1", in order to limit the plot values to maximum of one.
-#'                     the alternative is "ci", which sets the feature with
+#' @param normalize_to character. The default value is "upperCI", which sets the feature with
 #'                     the maximum SHAP value to one, allowing the higher CI to
 #'                     go beyond one. Setting this value is mainly for aesthetic
 #'                     reason to adjust the Plot, but also, it can influence the
 #'                     feature selection process, depending on the method in use,
 #'                     because it changes how the SHAP values should be normalized.
+#'                     the alternative is 'feature', specifying that
+#'                     in the normalization of the SHAP values, the maximum confidence
+#'                     interval of the weighted SHAP values should be equal to
+#'                     "1", in order to limit the plot values to maximum of one.
 #' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom stats weighted.mean
 #' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.mcc
@@ -75,16 +75,17 @@
 #' @export
 #' @return a list including the GGPLOT2 object, the data frame of SHAP values,
 #'         and performance metric of all models, as well as the model IDs.
-importance <- function(models,
-                       newdata,
-                       plot = TRUE,
-                       family = "binary",
-                       performance_metric = c("aucpr"),
-                       method = c("lowerCI"),
-                       cutoff = 0.05,
-                       top_n_features = NULL,
-                       sample_size = row(newdata),
-                       normalize_to = "ci") {
+
+shapley <- function(models,
+                    newdata,
+                    plot = TRUE,
+                    family = "binary",
+                    performance_metric = c("aucpr"),
+                    method = c("lowerCI"),
+                    cutoff = 0.01,
+                    top_n_features = NULL,
+                    sample_size = nrow(newdata),
+                    normalize_to = "upperCI") {
 
   # Variables
   # ============================================================
@@ -163,7 +164,7 @@ importance <- function(models,
     normalized_mean = NA,
     normalized_ci = NA)
 
-  globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
+  #globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
 
   for (j in unique(results$feature)) {
     tmp <- results[results$feature == j, grep("^contribution", names(results))]
@@ -185,13 +186,16 @@ importance <- function(models,
   # the minimum contribution should not be normalized as zero. instead,
   # it should be the ratio of minimum value to the maximum value.
   # The maximum would be the highest mean + the highest CI
-  if (normalize_to == "ci") {
+
+  if (normalize_to == "upperCI") {
     max  <- max(summaryShaps$mean + summaryShaps$ci)
   }
   else {
     max  <- max(summaryShaps$mean)
   }
-  min  <- min(summaryShaps$mean)/max
+
+  #??? I might still give the minimum value to be zero!
+  min  <- 0 # min(summaryShaps$mean)/max
 
   summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
                                                 min = min,
@@ -226,17 +230,24 @@ importance <- function(models,
     else stop("method must be one of 'mean', 'shapratio', or 'ci'")
   }
 
+
+
   # STEP 5: PLOT
   # ============================================================
   summaryShaps$feature <- factor(summaryShaps$feature,
-                                 levels = summaryShaps$feature[order(summaryShaps["normalized_mean"])])
+                                 levels = summaryShaps$feature[order(summaryShaps[["normalized_mean"]])])
+  #summaryShaps <<- summaryShaps
+  ftr <- summaryShaps$feature
+  nrmm <- summaryShaps$normalized_mean
+  lci <- summaryShaps$lowerCI
+  uci <- summaryShaps$upperCI
 
-  Plot <- ggplot2::ggplot(data = summaryShaps,
-                 aes(x = "feature",
-                     y = "normalized_mean")) +
+  Plot <- ggplot(data = NULL,
+                 aes(x = ftr,
+                     y = nrmm)) +
     geom_col(fill = "#07B86B", alpha = 0.8) +
-    geom_errorbar(aes(ymin = "lowerCI",
-                      ymax = "upperCI"),
+    geom_errorbar(aes(ymin = lci,
+                      ymax = uci),
                   width = 0.2, color = "#7A004BF0",
                   alpha = 0.75, size = 0.7) +
     coord_flip() +  # Rotating the graph to have mean values on X-axis
@@ -271,10 +282,8 @@ importance <- function(models,
 }
 
 
-# ids <- h2o.get_ids(aml)
-# a <- importance(models = ids,
-#           newdata = prostate
-#           )
+# a <- importance(models = ids[1:3],
+#           newdata = prostate)
 # a
 
 
