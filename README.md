@@ -80,7 +80,7 @@ shapley.plot(result, plot = "bar")
 
 <img src='man/figures/bar.png' align="center" height="400" />
 
-Another type of plot, that is also useful for extracting important features is 
+Another type of plot, that is also useful for identifying important features is 
 __`waffle`__ plot, by default showing any feature that at least has contributed 
 0.5% to the overall explained SHAP values across features. 
 
@@ -92,7 +92,7 @@ shapley.plot(result, plot = "waffle")
 
 ### Significance testing across features
 
-The bar plot above shows the weighted mean and weighted confidence intervals of SHAP contributions of different features. The confidence intervals already provide information whether the differencce between two features is due to chance. However, we can also perform a significance test to examine whether the difference between two features is statistically significant, using __`shapley.test`__ function. The significance test is based on permutation test, with a sample of 5000 permutations by default. Let's say, we want to examine whether the difference between "GLEASON" and "DPROS" features is due to chance:
+The bar plot displays the weighted average and confidence intervals for the SHAP contributions of various features, implying whether differences between two features might be due to random variation. To further investigate the statistical significance of these differences, the `shapley.test` function can be employed. This function uses a permutation test, typically with a default of 5000 permutations, to assess significance. For instance, to determine if the observed difference in SHAP contributions between the "GLEASON" and "DPROS" features is not just a random occurrence, we would use this function.
 
 ```r
 shapley.test(result, features = c("GLEASON", "DPROS"), n = 5000)
@@ -122,24 +122,20 @@ $p_value
 [1] 0.678
 ```
 
+> Note: the weighted confidence intervals showed in the bar plot do not apply any permutation test.
+
 ## Specifying number of top features
-Traditionally, specifying number of important feature with highest SHAP values was arbitrary and different scientific articles report, for example, top 10, top 15, top 20, etc. number of features with the hihgest SHAP contributions, yet, without considering the variations between different models. 
 
-However, computing weighted means and weighted 95% confidence intervals provides the possibilities for automated procedures of selecting features that are reliably contributing to the model. For example, the default strategy of the __`shapley`__ package is to select features that their lower weighted 95% confidence interval of relative mean SHAP is above the cutoff value of __`0.01`__. In other words, a feature that has a reliable relative SHAP contribution of 1% or higher (relative to feature with highest contribution) will be selected as important feature. This procedure is applied in the __`bar`__ plot, where the features are sorted based on their weighted mean SHAP values and the cutoff is applied to the lower weighted 95% confidence interval.
+Traditionally, the selection of a set number of significant features based on the highest SHAP values varied across scientific publications, with some reporting the top 10, 15, or 20. This selection did not account for the variability between models and often was either an arbitrary number. Other papers reported feature importance of all features, which is not practical for large datasets, and also, doesn't consider if features with neglegible SHAP contributions are statistically significant, given the variability across models. However, the calculation of weighted means and 95% confidence intervals allows for a systematic approach to identify features that consistently contribute to the model, across different models. For instance, the default method in the `shapley` package considers features important if their lower bound of the weighted 95% confidence interval ("`lowerCI`") for relative mean SHAP value exceeds `0.01`. This means any feature with a stable relative contribution of at least 1% - relative to the feature with the highest SHAP - is deemed important. This method is also utilized in the `bar` plot, where features are ranked by their weighted mean SHAP values, and the cutoff is applied to the lower confidence interval. This threshold can be adjusted to "`mean`", which sets the cutoff for weighted means, disregarding model variability—although this is experimental and might not be best practice, because it overlooks the variablitity across models and only considers the weighted means. Another experimental criterion - that seems more plausible than the "`mean`" strategy is "`shapratio`", setting a cutoff for the minimum weighted mean SHAP value as a percentage of the total SHAP contributions from all features. This is demonstrated in the `waffle` plot, where features must contribute at least 0.5% to the overall weighted mean SHAP values to be selected.
 
-This criteria can be changed to "`mean`", where the cutoff is applied for weighted means instead of weighted confidence intervals (THIS IS EXPERIMENTAL! probably it is not a good practice because it ignores the variability between the models, but it is worth further studying). Another criteria is "`shapratio`", which defines a cutoff for minimum weighted mean SHAP value compared to all SHAP values contributed by all features (THIS IS ALSO EXPERIMENTAL). The latter is applied in the __`waffle`__ plot, where selected features at least have 0.5% of contribution of the overall weighted mean SHAP values across all features. 
+Between the "`lowerCI`" and "`shapratio`" methods, each has merits and limitations. "`LowerCI`" addresses variability across models, while "`shapratio`" focuses on feature contribution variability. Implementing both could provide insight into their efficacy and alignment in practice. Future research should explore these methodologies further. 
 
-Of the two procedures "`lowerCI`" and "`shapratio`", both have their own strengths and weaknesses. The "`lowerCI`" concerns the variability between different models and the "`shapratio`" concerns the variability between different features. One might consider implementing both procedures to see to what extent these two procedures are aligned and useful in practice. This is an area that requires active research and testing and future research should particularly address this ideas. 
+
 
 ## SHAP contributions of Stacked Ensemble Models
 
-Stacked ensemble models combine the predictions of multiple models and weight the predictions based on the performance of the base-learner models. A similar strategy is applied by the __`shapley`__ software and thus, the weighted mean SHAP contributions of stacked ensemble models is computed similar to a grid of fine-tuned models as shown above. Whether the specified __`models`__ argument in the __`shapley`__ function is a `h2o` grid or `h2o ensemble`, is considered automatically and there is no need for the use to specify the class of the model object.
+Stacked ensemble models integrate multiple base learner models' predictions, assigning weights according to each base model's performance. The methodology implemented in `shapley` software employs a similar approach, calculating the weighted mean SHAP contributions for stacked ensemble models just as it would for a fine-tuned grid of models. The `shapley` function's `models` parameter automatically detects whether the input is an `h2o` grid or an `h2o` or `autoEnsemble` stacked ensemble, eliminating the need for users to identify the model object class. 
 
 ## Supported Machine Learning models
 
-The package is designed to work with any machine learning grid or stacked ensemble model that are developed by the [**`h2o`**](https://h2o.ai/blog/2022/shapley-values-a-gentle-introduction/) package 
-as well as [**`autoEnsemble`**](https://cran.r-project.org/package=autoEnsemble) 
-R package. 
-
-
-
+The package is compatible with machine learning grids or stacked ensemble models created using the [`h2o`](https://h2o.ai/blog/2022/shapley-values-a-gentle-introduction/) package, as well as the [`autoEnsemble`](https://cran.r-project.org/package=autoEnsemble) package in R.
