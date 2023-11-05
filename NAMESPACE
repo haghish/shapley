@@ -3,7 +3,6 @@
 export(shapley)
 export(shapley.plot)
 export(shapley.test)
-importFrom(autoEnsemble,autoEnsemble)
 importFrom(curl,curl)
 importFrom(ggplot2,aes)
 importFrom(ggplot2,coord_flip)

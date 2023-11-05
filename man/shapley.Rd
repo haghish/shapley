@@ -20,10 +20,9 @@ shapley(
 )
 }
 \arguments{
-\item{models}{H2O search grid, AutoML grid, a character vector of H2O model IDs,
-or an autoEnsemble object. the \code{"h2o.get_ids"} function
-from \code{"h2otools"} can
-retrieve the IDs from grids.}
+\item{models}{H2O search grid, AutoML grid, or a character vector of H2O model IDs.
+the \code{"h2o.get_ids"} function from \code{"h2otools"} can retrieve
+the IDs from grids.}
 
 \item{newdata}{h2o frame (data.frame). the data.frame must be already uploaded
 on h2o server (cloud). when specified, this dataset will be used
@@ -101,7 +100,6 @@ Weighted average of SHAP values and weighted SHAP confidence intervals
 \dontrun{
 # load the required libraries for building the base-learners and the ensemble models
 library(h2o)            #shapley supports h2o models
-library(autoEnsemble)   #autoEnsemble models, particularly useful under severe class imbalance
 library(shapley)
 
 # initiate the h2o server
@@ -154,7 +152,7 @@ result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
 ### get the models' IDs from the AutoML and grid searches.
 ### this is all that is needed before building the ensemble,
 ### i.e., to specify the model IDs that should be evaluated.
-
+library(autoEnsemble)
 ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
 autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
 result3 <- shapley(models = autoSearch, newdata = prostate, plot = TRUE)
