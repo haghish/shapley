@@ -16,11 +16,11 @@ The `shapley` R package provides a simple and efficient method for calculating t
 ### Current limitations in the machine learning literature
 > 1. Reporting unstable SHAP values from a single model, without considering the performance of the model nor the cross-variability of SHAP values across fine-tuned 
 models
-2. Arbitrary number used for selecting "top features", which usually includes a 
+> 2. Arbitrary number used for selecting "top features", which usually includes a 
 predefined number of features, such as top 10, top 20, etc. 
-3. Lack of method for computing SHAP values for stacked ensemble models or shap 
+> 3. Lack of method for computing SHAP values for stacked ensemble models or shap 
 contributions of features across all models of a tuned grid search
-4. Lack of method for computing confidence intervals for SHAP values, which could 
+> 4. Lack of method for computing confidence intervals for SHAP values, which could 
 also be used for significance testing across different features, i.e., to examine 
 whether one feature is significantly more important than another feature. 
 
