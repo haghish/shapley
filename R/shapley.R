@@ -86,6 +86,8 @@
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 #'
+#' set.seed(10)
+#'
 #' ### H2O provides 2 types of grid search for tuning the models, which are
 #' ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
 #' ### can be computed for both types.

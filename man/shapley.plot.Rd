@@ -27,7 +27,6 @@ This function normalizes a vector based on specified minimum
 \dontrun{
 # load the required libraries for building the base-learners and the ensemble models
 library(h2o)            #shapley supports h2o models
-library(autoEnsemble)   #autoEnsemble models, particularly useful under severe class imbalance
 library(shapley)
 
 # initiate the h2o server
@@ -40,6 +39,8 @@ prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 ### H2O provides 2 types of grid search for tuning the models, which are
 ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
 ### can be computed for both types.
+
+set.seed(10)
 
 #######################################################
 ### PREPARE AutoML Grid (takes a couple of minutes)
