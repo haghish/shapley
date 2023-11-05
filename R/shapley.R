@@ -65,7 +65,7 @@
 #' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.mcc
 #'             h2o.F2 h2o.mean_per_class_error h2o.giniCoef h2o.accuracy
 #'             h2o.shap_summary_plot
-#' @importFrom h2otools h2o.get_ids
+# @importFrom h2otools h2o.get_ids
 #' @importFrom curl curl
 #' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
 #'             ylab theme_classic theme scale_y_continuous margin expansion
