@@ -98,6 +98,8 @@ __`waffle`__ plot, by default showing any feature that at least has contributed
 shapley.plot(result, plot = "waffle")
 ```
 
+<img src='man/figures/waffle.png' align="center" height="400" />
+
 ### Significance testing across features
 
 ## Specifying number of top features
