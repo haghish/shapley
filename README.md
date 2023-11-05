@@ -10,25 +10,24 @@
 
 ## Introduction
 
-The `shapley` R package provides a simple and efficient method for calculating the weighted mean and weighted confidence interval of Shapley values for machine learning grids and stacked ensembles, resulting in more stable and reliable Shapley values, which also reflect the variability of SHAP values across fine-tuned models. Understanding the SHAP variability across fine-tuned models leads to a more transparent, reliable, and potentially more reproducible practice of identifying the most important features in a model, instead of reporting the Shapley values of a single _best_ model. The problem with reporting the Shapley values of a single _best_ model is that under __severe class imbalance__ (class rarity resulting from low prevalence outcome), there are no global criteria for defining the _best_ model. As a result, the SHAP values of a single _best_ model may not be representative of the SHAP values of the other models. Under severe class imbalance, the stacked ensemble (meta-lerner) algorithms are more likely to produce a reliable model that represents the strength of multiple base-learners (component models that are used to train the stacked ensemble meta-learner). However, __to date, there has been no method nor software for computing SHAP values for stacked ensemble models__. This limitation is addressed with the methodology developed by this R package. In particular, the 
-`shapley` software addresses the following shortcomings often found in recent literature of applied machine learning:
+The `shapley` R package addresses a significant limitation in machine learning research by providing a method to calculate the weighted mean and confidence intervals of SHAP values across machine learning grids and stacked ensemble models. This approach enhances the stability and reliability of SHAP values, making the determination of important features more transparent and potentially more reproducible. Traditionally, the focus has been on reporting SHAP values from a single  'best' model, which can be problematic under conditions of severe class imbalance, where a universally accepted 'best' model may not exist. In addition, models with different parameters, might result in different evaluations of SHAP contributions and such variablity is also meaningful for researchers who wish to understand important features relevant to a model. In such scenarios, the SHAP values from a single model may not be representative of other models. The `shapley` package fills a critical gap by proposing methodology and enabling the computation of SHAP values for multiple machine learning models such as a fine-tuning grid search, and stacked ensemble models. 
 
-### Current limitations in the machine learning literature
-> 1. Reporting unstable SHAP values from a single model, without considering the performance of the model nor the cross-variability of SHAP values across fine-tuned 
-models
-> 2. Arbitrary number used for selecting "top features", which usually includes a 
-predefined number of features, such as top 10, top 20, etc. 
-> 3. Lack of method for computing SHAP values for stacked ensemble models or shap 
-contributions of features across all models of a tuned grid search
-> 4. Lack of method for computing confidence intervals for SHAP values, which could 
-also be used for significance testing across different features, i.e., to examine 
-whether one feature is significantly more important than another feature. 
+### Limitations in Current Machine Learning Research
+
+In particular, the `shapley` software addresses the following shortcomings, often found in recent literature of applied machine learning:
+
+
+1. The instability of SHAP values reported from single models is a concern, especially when the model's performance and the variability of SHAP values across multiple fine-tuned models are not taken into account. With the increase in  severity of class imbalance, the instability is expected to increase, because the definition of "best model" becomes less reliable due to lack of global performance metric that is not biased to class imbalance.  
+
+2. There is an absence of standardized methods for calculating SHAP values for stacked ensemble models or for determining the SHAP contributions of features within the entirety of models resulting from a tuned grid search. 
+
+3. There is a notable gap in methods for computing confidence intervals for SHAP values. Such intervals are necessary for significance testing to determine if one feature's importance is statistically greater than that of another. They also would reflect the variability between how different models reflect on SHAP values of different features. 
+
+4. The practice of identifying "top features" often relies on an arbitrary selection of a predefined number of features, such as the top 10 or top 20, without a standard methodological approach. There is a need for a more transparent and automated procedure for quantifying and identifying important features in a model. 
 
 ### Solutions implemented in the `shapley` R package
 
-The `shapley` R package provides a simple and efficient method for calculating the weighted mean and weighted confidence interval of Shapley values for multiple machine learning models. This package takes the performance metrics as a weight to consider SHAP calues computed from different models. Similarly, it computes the weighted 95% confidence intervals, which reflect on the variability of SHAP values across models. This procedure solves the problem resulting from reporting SHAP values from a _single best model_, without considering how the performance of the model reflects the SHAP values. The latter becomes particularly problematic in circumstances where defining "the best model" becomes unreliable or situational, such as under "severe class imbalance proble" (class rarity, resulting from low-prevalence outcome of interest). The methodology implemented in this software provides the possibility for more reliable SHAP contributions across models. This method also provide the ground for significance testing between the features, i.e., assessing whether the difference between SHAP values of two features is not due to random chance.
-
-This software also suggest several possibility for automatic and transparent procedures of specifying "important features", without requiring prespecified number of top features. These methods take different metrics into account to define "what is an important feature", which then, accordingly, number of important features based on SHAP contributions can be selected, eliminating the need for specifying the number of imoortant features in advance (for detail, see below). 
+The `shapley` R package computes the weighted average and confidence intervals of Shapley values from multiple machine learning models. By incorporating model performance metrics as weights, it addresses the variability in SHAP values across different models, which is often overlooked when relying on a single "best" model. This approach is particularly valuable in situations where defining the best model is challenging, such as with severe class imbalances (class rarity, caused by low-prevalence outcome). The package also facilitates more reliable computation of SHAP contributions across models and provides a basis for significance testing between features to ensure differences are not due to random chance. Furthermore, the package proposes several automated and transparent methods for identifying important features. These methods use various metrics to define importance, allowing for the selection of significant features based on SHAP contributions without pre-specifying number of top features (see below for details).
 
 ## Examples
 
@@ -139,3 +138,9 @@ Stacked ensemble models integrate multiple base learner models' predictions, ass
 ## Supported Machine Learning models
 
 The package is compatible with machine learning grids or stacked ensemble models created using the [`h2o`](https://h2o.ai/blog/2022/shapley-values-a-gentle-introduction/) package, as well as the [`autoEnsemble`](https://cran.r-project.org/package=autoEnsemble) package in R.
+
+## About the author
+
+The methodology implemented in this software as well as the software itself was developed by [E.F. Haghish](https://github.com/haghish/), who is a researcher at Department of Psychology, University of Oslo, researching applications of machine learning for mental health research. 
+
+> __Twitter: [@haghish](https://twitter.com/Haghish)__
