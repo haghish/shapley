@@ -123,7 +123,7 @@ $p_value
 ```
 
 ## Specifying number of top features
-
+Traditionally, specifying number of important feature with highest SHAP values was arbitrary and different scientific articles report, for example, top 10, top 15, top 20, etc. number of features with the hihgest SHAP contributions, yet, without considering the variations between different models. 
 
 ## SHAP contributions of Stacked Ensemble Models
 
