@@ -1,11 +1,20 @@
-#' @title Plot weighted SHAP contributions
-#' @description This function applies different criteria to visualize SHAP contributions
+#' @title Select top features in a model
+#' @description This function applies different criteria simultaniously to identify
+#'              the most important features in a model. The criteria include:
+#'              1) minimum limit of lower weighted confidence intervals of SHAP values
+#'              relative to the feature with highest SHAP value.
+#'              2) minimum limit of percentage of weighted mean SHAP values relative to
+#'              over all SHAP values of all features. These are specified with two
+#'              different cutoff values.
 #' @param shapley object of class 'shapley', as returned by the 'shapley' function
-#' @param plot character, specifying the type of the plot, which can be either
-#'            'bar' or 'waffle'. The default is 'bar'
-#' @importFrom waffle waffle
+#' @param lowerci numeric, specifying the lower limit of weighted confidence intervals
+#'                     of SHAP values relative to the feature with highest SHAP value.
+#'                     the default is 0.01
+#' @param shapratio numeric, specifying the lower limit of percentage of weighted mean
+#'                         SHAP values relative to over all SHAP values of all features.
+#'                         the default is 0.005
 #' @author E. F. Haghish
-#' @return ggplot object
+#' @return data.frame of selected features
 #' @examples
 #'
 #' \dontrun{
@@ -45,62 +54,40 @@
 #' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 #'
 #' #######################################################
-#' ### PLOT THE WEIGHTED MEAN SHAP VALUES
+#' ### Significance testing of contributions of two features
 #' #######################################################
 #'
-#' shapley.plot(result, plot = "bar")
-#' shapley.plot(result, plot = "waffle")
+#' shapley.top(result, lowerci = 0.01, shapratio = 0.005)
 #' }
 #' @export
 
-
-shapley.plot <- function(shapley, plot = "bar") {
+shapley.top <- function(shapley, lowerci = 0.01, shapratio = 0.005) {
 
   # Syntax check
   # ============================================================
   if (!inherits(shapley, "shapley"))
     stop("shapley object must be of class 'shapley'")
-  if (!is.character(plot)) {
-    stop("plot must be a character string")
-  }
-  if (plot != "bar" & plot != "waffle") {
-    stop("plot must be either 'bar' or 'waffle'")
-  }
 
-  index <- order(- shapley$summaryShaps$normalized_mean)
-  features <- shapley$summaryShaps$feature[index]
-  normalized_mean <- shapley$summaryShaps$normalized_mean[index]
-  shapratio <- shapley$summaryShaps$shapratio[index]
-
-  # Print the bar plot
+  # Prepare the dataset
   # ============================================================
-  if (plot == "bar") {
-    Plot <- shapley$plot
-  }
+  results <- data.frame(
+    feature = shapley$summaryShaps$feature,
+    lowerci = shapley$summaryShaps$lowerCI,
+    shapratio = shapley$summaryShaps$shapratio
+  )
 
-  # Calculate the percentages
-  percentage <- round((normalized_mean / sum(normalized_mean) * 100), 2)
+  # evaluate the criteria
+  # ============================================================
+  results$lowerCI_criteria <- results$lowerci >= lowerci
+  results$shapratio_criteria <- results$shapratio >= shapratio
 
-  round_to_half <- function(x) {
-    return(round(x * 2) / 2)
-  }
-  shapratio <- round_to_half(shapratio*400)
+  # Sort the results
+  # ============================================================
+  results <- results[order(results$lowerCI_criteria &
+                           results$shapratio_criteria,
+                           decreasing = TRUE), ]
 
-  # Create a factor with the percentage for the legend
-  legend <- paste0(features, " (", percentage, "%)")
-  # Order the legend by descending percentage
-  #legend <- factor(legend, levels = legend[order(-percentage)])
-
-  if (plot == "waffle") {
-    names(shapratio) <- as.character(legend)
-    Plot <- waffle(shapratio, rows = 20, size = 1,
-                   title = "Weighted mean SHAP contributions",
-                   legend_pos = "right")
-  }
-
-  print(Plot)
-
-  return(Plot)
+  return(results)
 }
 
 

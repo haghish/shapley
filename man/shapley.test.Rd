@@ -41,6 +41,8 @@ prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
 ### can be computed for both types.
 
+set.seed(10)
+
 #######################################################
 ### PREPARE AutoML Grid (takes a couple of minutes)
 #######################################################

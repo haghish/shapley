@@ -33,7 +33,6 @@ Imports:
     ggplot2 (>= 3.4.2),
     h2o (>= 3.34.0.0),
     curl (>= 4.3.0),
-    treemapify (>= 2.5.6),
     waffle (>= 1.0.2)
 RoxygenNote: 7.2.1
 URL: https://github.com/haghish/shapley, https://www.sv.uio.no/psi/english/people/academic/haghish/

@@ -129,7 +129,26 @@ Traditionally, the selection of a set number of significant features based on th
 
 Between the "`lowerCI`" and "`shapratio`" methods, each has merits and limitations. "`LowerCI`" addresses variability across models, while "`shapratio`" focuses on feature contribution variability. Implementing both could provide insight into their efficacy and alignment in practice. Future research should explore these methodologies further. 
 
+In this regard, the package also suggests a function for testing different criteria. Currently, implementing only `lowerci` and `shapratio` criteria. following the examples above, the __`shapley.top`__ shows features that pass 
+different criteria:
 
+```r
+# running shapley.top with defult values for the 'result' object
+shapley.top(result, lowerci = 0.01, shapratio = 0.005)
+```
+```
+  feature    lowerci   shapratio lowerCI_criteria shapratio_criteria
+1     AGE 0.13241618 0.056009832             TRUE               TRUE
+2   DCAPS 0.09566612 0.041606347             TRUE               TRUE
+3   DPROS 0.39986992 0.164283698             TRUE               TRUE
+4 GLEASON 0.89025073 0.364372706             TRUE               TRUE
+5      ID 0.33566464 0.141787423             TRUE               TRUE
+6     PSA 0.34900145 0.145052440             TRUE               TRUE
+8     VOL 0.19571663 0.082300782             TRUE               TRUE
+7    RACE 0.01079821 0.004586772             TRUE              FALSE
+```
+
+which shows the features that pass both or one of the criteria. There is, however, a need for further research to suggest optimal cutoff values or reach a better perspective that what aspects should be taken into consideration for suggesting optimal cutoff values. 
 
 ## SHAP contributions of Stacked Ensemble Models
 
