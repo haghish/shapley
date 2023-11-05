@@ -80,16 +80,6 @@ shapley.plot(result, plot = "bar")
 
 <img src='man/figures/bar.png' align="center" height="400" />
 
-Another way to compare the weighted mean SHAP contributions is a pie chart, by specifying __`"pie"`__ or __`"tree"`__:
-
-```r
-shapley.plot(result, plot = "pie")
-```
-
-```r
-shapley.plot(result, plot = "tree")
-```
-
 Another type of plot, that is also useful for extracting important features is 
 __`waffle`__ plot, by default showing any feature that at least has contributed 
 0.5% to the overall explained SHAP values across features. 
@@ -102,7 +92,42 @@ shapley.plot(result, plot = "waffle")
 
 ### Significance testing across features
 
+The bar plot above shows the weighted mean and weighted confidence intervals of SHAP contributions of different features. The confidence intervals already provide information whether the differencce between two features is due to chance. However, we can also perform a significance test to examine whether the difference between two features is statistically significant, using __`shapley.test`__ function. The significance test is based on permutation test, with a sample of 5000 permutations by default. Let's say, we want to examine whether the difference between "GLEASON" and "DPROS" features is due to chance:
+
+```r
+shapley.test(result, features = c("GLEASON", "DPROS"), n = 5000)
+```
+```
+The difference between the two features is significant:
+observed weighted mean Shapley difference = 150.014579392817 and p-value = 0
+$mean_shapley_diff
+[1] 150.0146
+
+$p_value
+[1] 0
+```
+
+However, if we check the difference between "PSA" and "ID" features, the difference is insignificant, although "PSA" has a slightly higher weighted mean SHAP contribution:
+
+```r
+shapley.test(result, features = c("PSA", "ID"), n = 5000)
+```
+```
+The difference between the two features is not significant:
+observed weighted mean Shapley difference =2.44791199071206 and p-value = 0.678
+$mean_shapley_diff
+[1] 2.447912
+
+$p_value
+[1] 0.678
+```
+
 ## Specifying number of top features
+
+
+## SHAP contributions of Stacked Ensemble Models
+
+Stacked ensemble models combine the predictions of multiple models and weight the predictions based on the performance of the base-learner models. A similar strategy is applied by the __`shapley`__ software and thus, the weighted mean SHAP contributions of stacked ensemble models is computed similar to a grid of fine-tuned models as shown above. Whether the specified __`models`__ argument in the __`shapley`__ function is a `h2o` grid or `h2o ensemble`, is considered automatically and there is no need for the use to specify the class of the model object.
 
 ## Supported Machine Learning models
 

@@ -6,8 +6,9 @@
 #' @param shapley object of class 'shapley', as returned by the 'shapley' function
 #' @param plot character, specifying name of the plot. the default is 'bar',
 #'             creating a barplot of the mean weighted feature importance alongside
-#'             their confidence intervals. Other options are "pie", "tree", and
-#'             "waffle".
+#'             their confidence intervals. Other options is
+#'             "waffle", plotting any feature that has a weighted mean SHAP ratio
+#'             above 0.5% (default).
 #' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
 #'             ylab theme_classic theme scale_y_continuous margin expansion
 #'             geom_bar coord_polar theme_void element_blank element_text
@@ -103,37 +104,38 @@ shapley.plot <- function(shapley, plot = "bar") {
 
   # Pie chart
   # ============================================================
-  if (plot == "pie") {
-    # Create the pie chart
-    Plot <- ggplot(data=NULL, aes(x = "",
-                                  y = normalized_mean, fill = legend)) +
-      geom_bar(width = 1, stat = "identity") +
-      coord_polar("y", start = 0) +
-      theme_void() +
-      theme(
-        legend.title = element_blank(),
-        legend.position = "right",
-        text = element_text(size = 12) # Adjust text size here if needed
-      ) +
-      scale_fill_discrete(name = "Feature", labels = legend) +
-      labs(fill = "Feature")
-  }
-
-  else if (plot == "tree") {
-    Plot <- ggplot(data=NULL,
-                   aes(area = normalized_mean,
-                       fill = features,
-                       label = features)) +  #legend
-      geom_treemap() +
-      geom_treemap_text(
-        #colour = "white",
-        place = "centre",
-        grow = TRUE, reflow = TRUE, size = 1) + # Fixed font size instead of letting it be determized automatically
-      theme(legend.position = "right") +
-      labs(fill = "Feature") +
-      scale_fill_discrete(name = "Feature", labels = legend)
-  }
-  else if (plot == "waffle") {
+  # if (plot == "pie") {
+  #   #??? has a bug in specifying legend names and currently, the plot is ugly!
+  #   # Create the pie chart
+  #   Plot <- ggplot(data=NULL, aes(x = "",
+  #                                 y = normalized_mean, fill = legend)) +
+  #     geom_bar(width = 1, stat = "identity") +
+  #     coord_polar("y", start = 0) +
+  #     theme_void() +
+  #     theme(
+  #       legend.title = element_blank(),
+  #       legend.position = "right",
+  #       text = element_text(size = 12) # Adjust text size here if needed
+  #     ) +
+  #     scale_fill_discrete(name = "Feature", labels = legend) +
+  #     labs(fill = "Feature")
+  # }
+  #
+  # if (plot == "tree") {
+  #   Plot <- ggplot(data=NULL,
+  #                  aes(area = normalized_mean,
+  #                      fill = features,
+  #                      label = features)) +  #legend
+  #     geom_treemap() +
+  #     geom_treemap_text(
+  #       #colour = "white",
+  #       place = "centre",
+  #       grow = TRUE, reflow = TRUE, size = 1) + # Fixed font size instead of letting it be determized automatically
+  #     theme(legend.position = "right") +
+  #     labs(fill = "Feature") +
+  #     scale_fill_discrete(name = "Feature", labels = legend)
+  # }
+  if (plot == "waffle") {
     names(shapratio) <- as.character(legend)
     Plot <- waffle(shapratio, rows = 20, size = 1,
                           title = "Weighted mean SHAP contributions",
