@@ -4,14 +4,14 @@
 \alias{test}
 \title{Weighted Permutation Test for Difference of Means}
 \usage{
-test(x, y, weights, n = 1000)
+test(var1, var2, weights, n = 2000)
 }
 \arguments{
-\item{x}{A numeric vector.}
+\item{var1}{A numeric vector.}
 
-\item{y}{A numeric vector of the same length as \code{x}.}
+\item{var2}{A numeric vector of the same length as \code{var1}.}
 
-\item{weights}{A numeric vector of weights, assumed to be the same for both \code{x} and \code{y}.}
+\item{weights}{A numeric vector of weights, assumed to be the same for both \code{var1} and \code{var2}.}
 
 \item{n}{The number of permutations to perform (default is 1000).}
 }

@@ -72,9 +72,74 @@
 #' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
 #'             ylab theme_classic theme scale_y_continuous margin expansion
 #' @author E. F. Haghish
-#' @export
 #' @return a list including the GGPLOT2 object, the data frame of SHAP values,
 #'         and performance metric of all models, as well as the model IDs.
+#' @examples
+#'
+#' \dontrun{
+#' # load the required libraries for building the base-learners and the ensemble models
+#' library(h2o)            #shapley supports h2o models
+#' library(autoEnsemble)   #autoEnsemble models, particularly useful under severe class imbalance
+#' library(shapley)
+#'
+#' # initiate the h2o server
+#' h2o.init(ignore_config = TRUE, nthreads = 2, bind_to_localhost = FALSE, insecure = TRUE)
+#'
+#' # upload data to h2o cloud
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#'
+#' ### H2O provides 2 types of grid search for tuning the models, which are
+#' ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
+#' ### can be computed for both types.
+#'
+#' #######################################################
+#' ### PREPARE AutoML Grid (takes a couple of minutes)
+#' #######################################################
+#' # run AutoML to tune various models (GBM) for 60 seconds
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
+#'                  include_algos=c("GBM"),
+#'
+#'                  # this setting ensures the models are comparable for building a meta learner
+#'                  seed = 2023, nfolds = 10,
+#'                  keep_cross_validation_predictions = TRUE)
+#'
+#' ### call 'shapley' function to compute the weighted mean and weighted confidence intervals
+#' ### of SHAP values across all trained models.
+#' ### Note that the 'newdata' should be the testing dataset!
+#' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
+#'
+#' #######################################################
+#' ### PREPARE H2O Grid (takes a couple of minutes)
+#' #######################################################
+#' # make sure equal number of "nfolds" is specified for different grids
+#' grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
+#'                  hyper_params = list(ntrees = seq(1,50,1)),
+#'                  grid_id = "ensemble_grid",
+#'
+#'                  # this setting ensures the models are comparable for building a meta learner
+#'                  seed = 2023, fold_assignment = "Modulo", nfolds = 10,
+#'                  keep_cross_validation_predictions = TRUE)
+#'
+#' result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
+#'
+#' #######################################################
+#' ### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
+#' #######################################################
+#'
+#' ### get the models' IDs from the AutoML and grid searches.
+#' ### this is all that is needed before building the ensemble,
+#' ### i.e., to specify the model IDs that should be evaluated.
+#'
+#' ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
+#' autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
+#' result3 <- shapley(models = autoSearch, newdata = prostate, plot = TRUE)
+#'
+#'
+#' }
+#' @export
 
 shapley <- function(models,
                     newdata,
@@ -87,13 +152,6 @@ shapley <- function(models,
                     sample_size = nrow(newdata),
                     normalize_to = "upperCI") {
 
-  # Variables
-  # ============================================================
-  w <- NULL
-  results <- NULL
-  feature_importance <- list()
-  z <- 0
-  pb <- txtProgressBar(z, length(ids), style = 3)
 
   # Syntax check
   # ============================================================
@@ -106,12 +164,24 @@ shapley <- function(models,
   # STEP 0: prepare the models, by either confirming that the models are 'h2o' or 'autoEnsemble'
   #        or by extracting the model IDs from these objects
   # ============================================================
-  if (inherits(models,"H2OAutoML") | inherits(models,"H2OAutoML")) {
+  if (inherits(models,"H2OAutoML") | inherits(models,"H2OAutoML")
+      | inherits(models,"H2OGrid")) {
     ids <- h2o.get_ids(models)
+  }
+  else if (inherits(models,"autoEnsemble")) {
+    ids <- models[["top_rank_id"]]
   }
   else if (inherits(models,"character")) {
     ids <- models
   }
+
+  # Variables definitions
+  # ============================================================
+  w <- NULL
+  results <- NULL
+  feature_importance <- list()
+  z <- 0
+  pb <- txtProgressBar(z, length(ids), style = 3)
 
   # STEP 1: Compute SHAP values and performance metric for each model
   # ============================================================
@@ -249,7 +319,7 @@ shapley <- function(models,
     geom_errorbar(aes(ymin = lci,
                       ymax = uci),
                   width = 0.2, color = "#7A004BF0",
-                  alpha = 0.75, size = 0.7) +
+                  alpha = 0.75, linewidth = 0.7) +
     coord_flip() +  # Rotating the graph to have mean values on X-axis
     ggtitle("") +
     xlab("Features\n") +
@@ -280,11 +350,4 @@ shapley <- function(models,
 
   return(obj)
 }
-
-
-# a <- importance(models = ids[1:3],
-#           newdata = prostate)
-# a
-
-
 
