@@ -1,5 +1,8 @@
 > __CITATION__: _Haghish, E. F. (2023). Weighted Mean Shapley Values with Confidence Intervals for Machine Learning Grids and Stacked Ensembles [computer software]. Url: <https://github.com/haghish/shapley>_
 
+- - -
+
+
 <a href="https://github.com/haghish/shapley"><img src='man/figures/logo.png' align="right" height="250" /></a>
   
   `shapley` : Weighted Mean Shapley Values with Confidence Intervals for Machine Learning Grids and Stacked Ensembles
@@ -22,5 +25,5 @@ this R package.
 
 The package is designed to work with any machine learning grid or stacked ensemble model that is supported by the [**h2o**](https://h2o.ai/blog/2022/shapley-values-a-gentle-introduction/) package. 
 
-> To be continued. 
+
 
