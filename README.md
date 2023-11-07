@@ -81,7 +81,7 @@ shapley.plot(result, plot = "bar")
 
 Another type of plot, that is also useful for identifying important features is 
 __`waffle`__ plot, by default showing any feature that at least has contributed 
-0.5% to the overall explained SHAP values across features. 
+0.25% to the overall explained SHAP values across features. 
 
 ```r
 shapley.plot(result, plot = "waffle")
