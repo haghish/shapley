@@ -15,7 +15,6 @@ shapley(
   method = c("lowerCI"),
   cutoff = 0.01,
   top_n_features = NULL,
-  sample_size = nrow(newdata),
   normalize_to = "upperCI"
 )
 }
@@ -62,10 +61,6 @@ the top features.}
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
-
-\item{sample_size}{integer. The number of observations to be sampled from the
-data set. The default is all observations provided within
-the newdata.}
 
 \item{normalize_to}{character. The default value is "upperCI", which sets the feature with
 the maximum SHAP value to one, allowing the higher CI to

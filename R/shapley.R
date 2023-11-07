@@ -47,9 +47,9 @@
 #'               by h2o machine learning are supported.
 #' @param plot logical. if TRUE, the weighted mean and confidence intervals of
 #'             the SHAP values are plotted. The default is TRUE.
-#' @param sample_size integer. The number of observations to be sampled from the
-#'                    data set. The default is all observations provided within
-#'                    the newdata.
+# @param sample_size integer. The number of observations to be sampled from the
+#                    data set. The default is all observations provided within
+#                    the newdata.
 #' @param normalize_to character. The default value is "upperCI", which sets the feature with
 #'                     the maximum SHAP value to one, allowing the higher CI to
 #'                     go beyond one. Setting this value is mainly for aesthetic
@@ -148,7 +148,7 @@ shapley <- function(models,
                     method = c("lowerCI"),
                     cutoff = 0.01,
                     top_n_features = NULL,
-                    sample_size = nrow(newdata),
+                    #sample_size = nrow(newdata),
                     normalize_to = "upperCI") {
 
 
@@ -176,6 +176,7 @@ shapley <- function(models,
 
   # Variables definitions
   # ============================================================
+  BASE <- NULL
   w <- NULL
   results <- NULL
   feature_importance <- list()
@@ -192,7 +193,7 @@ shapley <- function(models,
       model = model,
       newdata = newdata,
       columns = NULL, #get SHAP for all columns
-      sample_size = sample_size
+      sample_size = nrow(newdata) #sample_size
     )
 
     # Extract the performance metrics
@@ -205,10 +206,10 @@ shapley <- function(models,
     # create the summary dataset
     # ----------------------------------------------------------
     if (z == 1) {
-      data <- m$data #reserve the first model's data
+      BASE <- m
+      data <- m$data #reserve the first model's data for rowmean shap computation
       data <- data[order(data$Row.names), ]
       results <- data[, c("Row.names", "feature", "contribution")]
-      BASE <- m
     }
     else {
       holder <- m$data[, c("Row.names", "contribution")]
@@ -249,6 +250,17 @@ shapley <- function(models,
     summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
     summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
   }
+
+  # Compute row means of SHAP contributions for each subject
+  # ============================================================
+  cols <- grep("^contribution", names(results))
+
+  for (r in 1:nrow(data)) {
+    data[r, "contribution"] <- weighted.mean(results[r, cols], w)
+  }
+  BASE$data <- BASE$data[order(BASE$data$Row.names), ]
+  BASE$data$contribution <- data$contribution
+  BASE$labels$title <- "SHAP Mean Summary Plot\n"
 
   # STEP 3: NORMALIZE the SHAP contributions and their CI
   # ============================================================
@@ -339,6 +351,7 @@ shapley <- function(models,
 
   obj <- list(ids = ids,
               plot = Plot,
+              contributionPlot = BASE,
               summaryShaps = summaryShaps,
               feature_importance = feature_importance,
               weights = w,

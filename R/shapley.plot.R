@@ -2,8 +2,17 @@
 #' @description This function applies different criteria to visualize SHAP contributions
 #' @param shapley object of class 'shapley', as returned by the 'shapley' function
 #' @param plot character, specifying the type of the plot, which can be either
-#'            'bar' or 'waffle'. The default is 'bar'
+#'            'bar', 'waffle', or 'shap'. The default is 'bar'.
+#' @param legendstyle character, specifying the style of the plot legend, which
+#'                    can be either 'continuous' (default) or 'discrete'. the
+#'                    continuous legend is only applicable to 'shap' plots and
+#'                    other plots only use 'discrete' legend.
+#' @param scale_colour_gradient character vector for specifying the color gradients
+#'                              for the plot.
 #' @importFrom waffle waffle
+#' @importFrom h2o h2o.shap_summary_plot h2o.getModel
+#' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
+#'             margin element_text theme_classic labs ylab xlab ggtitle
 #' @author E. F. Haghish
 #' @return ggplot object
 #' @examples
@@ -54,7 +63,10 @@
 #' @export
 
 
-shapley.plot <- function(shapley, plot = "bar") {
+shapley.plot <- function(shapley,
+                         plot = "bar",
+                         legendstyle = "continuous",
+                         scale_colour_gradient = NULL) {
 
   # Syntax check
   # ============================================================
@@ -63,8 +75,8 @@ shapley.plot <- function(shapley, plot = "bar") {
   if (!is.character(plot)) {
     stop("plot must be a character string")
   }
-  if (plot != "bar" & plot != "waffle") {
-    stop("plot must be either 'bar' or 'waffle'")
+  if (plot != "bar" & plot != "waffle" & plot != "shap") {
+    stop("plot must be either 'bar', 'waffle', or 'shap'")
   }
 
   index <- order(- shapley$summaryShaps$normalized_mean)
@@ -96,6 +108,56 @@ shapley.plot <- function(shapley, plot = "bar") {
     Plot <- waffle(shapratio, rows = 20, size = 1,
                    title = "Weighted mean SHAP contributions",
                    legend_pos = "right")
+  }
+
+  if (plot == "shap") {
+
+    # STEP 3: PLOT
+    # ============================================================
+    Plot <- shapley$contributionPlot +
+      ggtitle("") +
+      xlab("Features\n") +
+      ylab("\nSHAP contribution") +
+      theme_classic() +
+      labs(colour = "Normalized values") +
+      theme(
+        legend.position="top",
+        legend.justification = "right",
+        legend.title.align = 0.5,
+        legend.direction = "horizontal",
+        legend.text=element_text(colour="black", size=6, face="bold"),
+        legend.key.height = grid::unit(0.3, "cm"),
+        legend.key.width = grid::unit(1, "cm"),
+        #legend.margin=margin(grid::unit(0,"cm")),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        plot.margin = margin(t = -0.5, r = .25, b = .25, l = .25, unit = "cm")  # Reduce top plot margin
+      ) +
+      guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
+
+    if (legendstyle == "continuous") {
+      # Set color range
+    }
+
+    else if (legendstyle == "discrete") {
+      Plot <- Plot +
+        guides(colour = guide_legend(title.position = "top",
+                                     title.hjust = 0.5,
+                                     legend.margin = margin(t = -1, unit = "cm"),
+                                     override.aes = list(size = 3)
+        )) +
+        theme(legend.key.height = grid::unit(0.4, "cm"),
+              legend.key.width = grid::unit(0.4, "cm"))
+    }
+
+    # Fix the color scale of the model
+    # ============================================================
+    if (length(scale_colour_gradient) == 3) {
+      Plot <- Plot +
+        scale_colour_gradient2(low=scale_colour_gradient[1],
+                               mid=scale_colour_gradient[2],
+                               high=scale_colour_gradient[3],
+                               midpoint = 0.5)
+    }
   }
 
   print(Plot)

@@ -4,13 +4,26 @@
 \alias{shapley.plot}
 \title{Plot weighted SHAP contributions}
 \usage{
-shapley.plot(shapley, plot = "bar")
+shapley.plot(
+  shapley,
+  plot = "bar",
+  legendstyle = "continuous",
+  scale_colour_gradient = NULL
+)
 }
 \arguments{
 \item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
 
 \item{plot}{character, specifying the type of the plot, which can be either
-'bar' or 'waffle'. The default is 'bar'}
+'bar', 'waffle', or 'shap'. The default is 'bar'.}
+
+\item{legendstyle}{character, specifying the style of the plot legend, which
+can be either 'continuous' (default) or 'discrete'. the
+continuous legend is only applicable to 'shap' plots and
+other plots only use 'discrete' legend.}
+
+\item{scale_colour_gradient}{character vector for specifying the color gradients
+for the plot.}
 }
 \value{
 ggplot object
