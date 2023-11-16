@@ -1,6 +1,5 @@
 
 > - __Software Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP for Feature Selection in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>    
-> - __Citation of the methods, rationale, and documentation__: _Haghish, E. F. (2023). Weighted Mean Shapley Values with Confidence Intervals for Machine Learning Grids and Stacked Ensembles [computer software]_. Url: <https://github.com/haghish/shapley>
 
 - - -
 
