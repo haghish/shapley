@@ -212,14 +212,32 @@ shapley <- function(models,
       results <- data[, c("Row.names", "feature", "contribution")]
     }
     else {
-      holder <- m$data[, c("Row.names", "contribution")]
-      colnames(holder) <- c("Row.names", paste0("contribution", z))
+      holder <- m$data[, c("Row.names", "feature", "contribution")]
+      colnames(holder) <- c("Row.names", "feature", paste0("contribution", z))
       holder <- holder[order(holder$Row.names), ]
-      results <- cbind(results, holder[, 2, drop = FALSE])
+      #results <- cbind(results, holder[, 2, drop = FALSE])
+
+      # NOTE: instead of cbind, use merge because the number of "important" features
+      # are not identical according to different models. therefore, merge the
+      # datasets and if a new feature is added, then the value of this this
+      # feature for previous models should be zero
+
+      results <- merge(results, holder, by="Row.names", all = T)
+
+      findex <- is.na(results[,"feature.x"])
+      results[findex,"feature.x"] <- results[findex,"feature.y"]
+      results[,"feature.y"] <- NULL
+      names(results)[names(results) == "feature.x"] <- "feature"
     }
 
     setTxtProgressBar(pb, z)
   }
+
+  # ???
+  # NOTE: if a feature is not important for a model, then the shap value is NA.
+  # replace them with zero
+  # ============================================================
+  results[is.na(results)] <- 0
 
   #data <<- cbind(data, results[, -1])
 
