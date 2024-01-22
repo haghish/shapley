@@ -1,20 +1,77 @@
-#' @title Plot weighted SHAP contributions
-#' @description This function applies different criteria to visualize SHAP contributions
-#' @param shapley object of class 'shapley', as returned by the 'shapley' function
-#' @param plot character, specifying the type of the plot, which can be either
-#'            'bar', 'waffle', or 'shap'. The default is 'bar'.
-#' @param legendstyle character, specifying the style of the plot legend, which
-#'                    can be either 'continuous' (default) or 'discrete'. the
-#'                    continuous legend is only applicable to 'shap' plots and
-#'                    other plots only use 'discrete' legend.
-#' @param scale_colour_gradient character vector for specifying the color gradients
-#'                              for the plot.
-#' @importFrom waffle waffle
-#' @importFrom h2o h2o.shap_summary_plot h2o.getModel
-#' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
-#'             margin element_text theme_classic labs ylab xlab ggtitle
+#' @title Weighted average of SHAP values and weighted SHAP confidence intervals
+#'        for a grid of fine-tuned models or base-learners of a stacked ensemble
+#'        model
+#' @description Weighted average of SHAP values and weighted SHAP confidence intervals
+#'              provide a measure of feature importance for a grid of fine-tuned models
+#'              or base-learners of a stacked ensemble model. Instead of reporting
+#'              relative SHAP contributions for a single model, this function
+#'              takes the variability in feature importance of multiple models
+#'              into account and computes weighted mean and confidence intervals
+#'              for each feature, taking the performance metric of each model as
+#'              the weight. The function also provides a plot of the weighted
+#'              SHAP values and confidence intervals. Currently only models
+#'              trained by h2o machine learning software or autoEnsemble
+#'              package are supported.
+#' @param models H2O search grid, AutoML grid, or a character vector of H2O model IDs.
+#'               the \code{"h2o.get_ids"} function from \code{"h2otools"} can retrieve
+#'               the IDs from grids.
+#' @param newdata h2o frame (data.frame). the data.frame must be already uploaded
+#'                on h2o server (cloud). when specified, this dataset will be used
+#'                for evaluating the models. if not specified, model performance
+#'                on the training dataset will be reported.
+#' @param performance_metric character, specifying the performance metric to be
+#'                           used for weighting the SHAP values (mean and 95% CI). The default is
+#'                           "aucpr" (area under the precision-recall curve). Other options include
+#'                           "auc" (area under the ROC curve), "mcc" (Matthews correlation coefficient),
+#'                           and "f2" (F2 score).
+#' @param method character, specifying the method used for identifying the most
+#'               important features according to their weighted SHAP values.
+#'               The default selection method is "lowerCI", which includes
+#'               features whose lower weighted confidence interval exceeds the
+#'               predefined 'cutoff' value (default is relative SHAP of 1%).
+#'               Alternatively, the "mean" option can be specified, indicating
+#'               any feature with normalized weighted mean SHAP contribution above
+#'               the specified 'cutoff' should be selected. Another
+#'               alternative options is "shapratio", a method that filters
+#'               for features where the proportion of their relative weighted SHAP
+#'               value exceeds the 'cutoff'. This approach calculates the relative
+#'               contribution of each feature's weighted SHAP value against the
+#'               aggregate of all features, with those surpassing the 'cutoff'
+#'               being selected as top feature.
+#' @param cutoff numeric, specifying the cutoff for the method used for selecting
+#'               the top features.
+#' @param top_n_features integer. if specified, the top n features with the
+#'                       highest weighted SHAP values will be selected, overrullung
+#'                       the 'cutoff' and 'method' arguments.
+#' @param family character. currently only "binary" classification models trained
+#'               by h2o machine learning are supported.
+#' @param plot logical. if TRUE, the weighted mean and confidence intervals of
+#'             the SHAP values are plotted. The default is TRUE.
+# @param sample_size integer. The number of observations to be sampled from the
+#                    data set. The default is all observations provided within
+#                    the newdata.
+#' @param normalize_to character. The default value is "upperCI", which sets the feature with
+#'                     the maximum SHAP value to one, allowing the higher CI to
+#'                     go beyond one. Setting this value is mainly for aesthetic
+#'                     reason to adjust the Plot, but also, it can influence the
+#'                     feature selection process, depending on the method in use,
+#'                     because it changes how the SHAP values should be normalized.
+#'                     the alternative is 'feature', specifying that
+#'                     in the normalization of the SHAP values, the maximum confidence
+#'                     interval of the weighted SHAP values should be equal to
+#'                     "1", in order to limit the plot values to maximum of one.
+#' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
+#' @importFrom stats weighted.mean
+#' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.mcc
+#'             h2o.F2 h2o.mean_per_class_error h2o.giniCoef h2o.accuracy
+#'             h2o.shap_summary_plot
+# @importFrom h2otools h2o.get_ids
+#' @importFrom curl curl
+#' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
+#'             ylab theme_classic theme scale_y_continuous margin expansion
 #' @author E. F. Haghish
-#' @return ggplot object
+#' @return a list including the GGPLOT2 object, the data frame of SHAP values,
+#'         and performance metric of all models, as well as the model IDs.
 #' @examples
 #'
 #' \dontrun{
@@ -29,11 +86,11 @@
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 #'
+#' set.seed(10)
+#'
 #' ### H2O provides 2 types of grid search for tuning the models, which are
 #' ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
 #' ### can be computed for both types.
-#'
-#' set.seed(10)
 #'
 #' #######################################################
 #' ### PREPARE AutoML Grid (takes a couple of minutes)
@@ -54,115 +111,252 @@
 #' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 #'
 #' #######################################################
-#' ### PLOT THE WEIGHTED MEAN SHAP VALUES
+#' ### PREPARE H2O Grid (takes a couple of minutes)
+#' #######################################################
+#' # make sure equal number of "nfolds" is specified for different grids
+#' grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
+#'                  hyper_params = list(ntrees = seq(1,50,1)),
+#'                  grid_id = "ensemble_grid",
+#'
+#'                  # this setting ensures the models are comparable for building a meta learner
+#'                  seed = 2023, fold_assignment = "Modulo", nfolds = 10,
+#'                  keep_cross_validation_predictions = TRUE)
+#'
+#' result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
+#'
+#' #######################################################
+#' ### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
 #' #######################################################
 #'
-#' shapley.plot(result, plot = "bar")
-#' shapley.plot(result, plot = "waffle")
+#' ### get the models' IDs from the AutoML and grid searches.
+#' ### this is all that is needed before building the ensemble,
+#' ### i.e., to specify the model IDs that should be evaluated.
+#' library(autoEnsemble)
+#' ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
+#' autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
+#' result3 <- shapley(models = autoSearch, newdata = prostate, plot = TRUE)
+#'
+#'
 #' }
 #' @export
 
+shapley <- function(models,
+                    newdata,
+                    plot = TRUE,
+                    family = "binary",
+                    performance_metric = c("aucpr"),
+                    method = c("lowerCI"),
+                    cutoff = 0.01,
+                    top_n_features = NULL,
+                    #sample_size = nrow(newdata),
+                    normalize_to = "upperCI") {
 
-shapley.plot <- function(shapley,
-                         plot = "bar",
-                         legendstyle = "continuous",
-                         scale_colour_gradient = NULL) {
 
   # Syntax check
   # ============================================================
-  if (!inherits(shapley, "shapley"))
-    stop("shapley object must be of class 'shapley'")
-  if (!is.character(plot)) {
-    stop("plot must be a character string")
-  }
-  if (plot != "bar" & plot != "waffle" & plot != "shap") {
-    stop("plot must be either 'bar', 'waffle', or 'shap'")
-  }
+  if (family != "binary") stop("currently only binary classification models from 'h2o' and 'autoEnsemble' are supported")
+  if (performance_metric != "aucpr" &
+      performance_metric != "auc" &
+      performance_metric != "mcc" &
+      performance_metric != "f2") stop("performance metric must be one of 'aucpr', 'auc', 'mcc', or 'f2'")
 
-  index <- order(- shapley$summaryShaps$normalized_mean)
-  features <- shapley$summaryShaps$feature[index]
-  normalized_mean <- shapley$summaryShaps$normalized_mean[index]
-  shapratio <- shapley$summaryShaps$shapratio[index]
-
-  # Print the bar plot
+  # STEP 0: prepare the models, by either confirming that the models are 'h2o' or 'autoEnsemble'
+  #        or by extracting the model IDs from these objects
   # ============================================================
-  if (plot == "bar") {
-    Plot <- shapley$plot
+  if (inherits(models,"H2OAutoML") | inherits(models,"H2OAutoML")
+      | inherits(models,"H2OGrid")) {
+    ids <- h2o.get_ids(models)
+  }
+  else if (inherits(models,"autoEnsemble")) {
+    ids <- models[["top_rank_id"]]
+  }
+  else if (inherits(models,"character")) {
+    ids <- models
   }
 
-  # Calculate the percentages
-  percentage <- round((normalized_mean / sum(normalized_mean) * 100), 2)
+  # Variables definitions
+  # ============================================================
+  BASE <- NULL
+  w <- NULL
+  results <- NULL
+  selectedFeatures <- NULL
+  Plot <- NULL
+  feature_importance <- list()
+  z <- 0
+  pb <- txtProgressBar(z, length(ids), style = 3)
 
-  round_to_half <- function(x) {
-    return(round(x * 2) / 2)
-  }
-  shapratio <- round_to_half(shapratio*400)
+  # STEP 1: Compute SHAP values and performance metric for each model
+  # ============================================================
+  for (i in ids) {
+    z <- z + 1
+    model <- h2o.getModel(i)
 
-  # Create a factor with the percentage for the legend
-  legend <- paste0(features, " (", percentage, "%)")
-  # Order the legend by descending percentage
-  #legend <- factor(legend, levels = legend[order(-percentage)])
+    m <- h2o.shap_summary_plot(
+      model = model,
+      newdata = newdata,
+      columns = NULL, #get SHAP for all columns
+      sample_size = nrow(newdata) #sample_size
+    )
 
-  if (plot == "waffle") {
-    names(shapratio) <- as.character(legend)
-    Plot <- waffle(shapratio, rows = 20, size = 1,
-                   title = "Weighted mean SHAP contributions",
-                   legend_pos = "right")
-  }
+    # Extract the performance metrics
+    # ----------------------------------------------------------
+    if (performance_metric == "aucpr") w <- c(w, h2o.aucpr(model))
+    else if (performance_metric == "auc") w <- c(w, h2o.auc(model))
+    else if (performance_metric == "mcc") w <- c(w, h2o.mcc(model))
+    else if (performance_metric == "f2") w <- c(w, h2o.F2(model))
 
-  if (plot == "shap") {
+    # create the summary dataset
+    # ----------------------------------------------------------
+    if (z == 1) {
+      BASE <- m
+      data <- m$data #reserve the first model's data for rowmean shap computation
+      data <- data[order(data$Row.names), ]
+      results <- data[, c("Row.names", "feature", "contribution")]
+    }
+    else {
+      holder <- m$data[, c("Row.names", "feature", "contribution")]
+      colnames(holder) <- c("Row.names", "feature", paste0("contribution", z))
+      holder <- holder[order(holder$Row.names), ]
+      #results <- cbind(results, holder[, 2, drop = FALSE])
 
-    # STEP 3: PLOT
-    # ============================================================
-    Plot <- shapley$contributionPlot +
-      ggtitle("") +
-      xlab("Features\n") +
-      ylab("\nSHAP contribution") +
-      theme_classic() +
-      labs(colour = "Normalized values") +
-      theme(
-        legend.position="top",
-        legend.justification = "right",
-        legend.title.align = 0.5,
-        legend.direction = "horizontal",
-        legend.text=element_text(colour="black", size=6, face="bold"),
-        legend.key.height = grid::unit(0.3, "cm"),
-        legend.key.width = grid::unit(1, "cm"),
-        #legend.margin=margin(grid::unit(0,"cm")),
-        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-        plot.margin = margin(t = -0.5, r = .25, b = .25, l = .25, unit = "cm")  # Reduce top plot margin
-      ) +
-      guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
+      # NOTE: instead of cbind, use merge because the number of "important" features
+      # are not identical according to different models. therefore, merge the
+      # datasets and if a new feature is added, then the value of this this
+      # feature for previous models should be zero
 
-    if (legendstyle == "continuous") {
-      # Set color range
+      results <- merge(results, holder, by="Row.names", all = T)
+
+      findex <- is.na(results[,"feature.x"])
+      results[findex,"feature.x"] <- results[findex,"feature.y"]
+      results[,"feature.y"] <- NULL
+      names(results)[names(results) == "feature.x"] <- "feature"
     }
 
-    else if (legendstyle == "discrete") {
-      Plot <- Plot +
-        guides(colour = guide_legend(title.position = "top",
-                                     title.hjust = 0.5,
-                                     legend.margin = margin(t = -1, unit = "cm"),
-                                     override.aes = list(size = 3)
-        )) +
-        theme(legend.key.height = grid::unit(0.4, "cm"),
-              legend.key.width = grid::unit(0.4, "cm"))
-    }
-
-    # Fix the color scale of the model
-    # ============================================================
-    if (length(scale_colour_gradient) == 3) {
-      Plot <- Plot +
-        scale_colour_gradient2(low=scale_colour_gradient[1],
-                               mid=scale_colour_gradient[2],
-                               high=scale_colour_gradient[3],
-                               midpoint = 0.5)
-    }
+    setTxtProgressBar(pb, z)
   }
 
-  print(Plot)
+  # ???
+  # NOTE: if a feature is not important for a model, then the shap value is NA.
+  # replace them with zero
+  # ============================================================
+  results[is.na(results)] <- 0
 
-  return(Plot)
+  #data <<- cbind(data, results[, -1])
+
+  # STEP 2: Calculate the summary shap values for each feature and store the mean
+  #         shap values in a list, for significance testing
+  # ============================================================
+  summaryShaps <- data.frame(
+    feature = unique(results$feature),
+    mean = NA,
+    sd = NA,
+    ci = NA,
+    normalized_mean = NA,
+    normalized_ci = NA)
+
+  #globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
+
+  for (j in unique(results$feature)) {
+    tmp <- results[results$feature == j, grep("^contribution", names(results))]
+    tmp <- colSums(abs(tmp))
+    feature_importance[[j]] <- tmp
+
+    weighted_mean <- weighted.mean(tmp, w)
+    weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+    weighted_sd   <- sqrt(weighted_var)
+
+    # update the summaryShaps data frame
+    summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
+    summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
+    summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
+  }
+
+  # Compute row means of SHAP contributions for each subject
+  # ============================================================
+  cols <- grep("^contribution", names(results))
+
+  for (r in 1:nrow(data)) {
+    data[r, "contribution"] <- weighted.mean(results[r, cols], w)
+  }
+  BASE$data <- BASE$data[order(BASE$data$Row.names), ]
+  BASE$data$contribution <- data$contribution
+  BASE$labels$title <- "SHAP Mean Summary Plot\n"
+
+  # STEP 3: NORMALIZE the SHAP contributions and their CI
+  # ============================================================
+  # the minimum contribution should not be normalized as zero. instead,
+  # it should be the ratio of minimum value to the maximum value.
+  # The maximum would be the highest mean + the highest CI
+
+  if (normalize_to == "upperCI") {
+    max  <- max(summaryShaps$mean + summaryShaps$ci)
+  }
+  else {
+    max  <- max(summaryShaps$mean)
+  }
+
+  #??? I might still give the minimum value to be zero!
+  min  <- 0 # min(summaryShaps$mean)/max
+
+  summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
+                                            min = min,
+                                            max = max)
+
+  summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
+                                          min = min,
+                                          max = max)
+  # compute relative shap values
+  summaryShaps$shapratio <- summaryShaps$normalized_mean / sum(summaryShaps$normalized_mean)
+
+  # compute lowerCI
+  summaryShaps$lowerCI <- summaryShaps$normalized_mean - summaryShaps$normalized_ci
+  summaryShaps$upperCI <- summaryShaps$normalized_mean + summaryShaps$normalized_ci
+
+  # STEP 4: Feature selection
+  # ============================================================
+  selectedFeatures <- summaryShaps[order(summaryShaps$normalized_mean, decreasing = TRUE), ]
+  if (!is.null(top_n_features)) {
+    selectedFeatures <- selectedFeatures[1:top_n_features, ]
+  }
+  else {
+    if (method == "mean") {
+      selectedFeatures <- selectedFeatures[selectedFeatures$normalized_mean > cutoff, ]
+    }
+    else if (method == "shapratio") {
+      selectedFeatures <- selectedFeatures[selectedFeatures$shapratio > cutoff, ]
+    }
+    else if (method == "lowerCI") {
+      selectedFeatures <- selectedFeatures[selectedFeatures$lowerCI > cutoff, ]
+    }
+    else stop("method must be one of 'mean', 'shapratio', or 'ci'")
+  }
+
+
+  # STEP 5: Create the shapley object
+  # ============================================================
+  obj <- list(ids = ids,
+              plot = Plot,
+              contributionPlot = BASE,
+              summaryShaps = summaryShaps,
+              selectedFeatures = selectedFeatures$feature,
+              feature_importance = feature_importance,
+              weights = w,
+              results = results,
+              shap_contributions_by_ids = results)
+
+  class(obj) <- c("shapley", "list")
+
+  # STEP 6: PLOT
+  # ============================================================
+  if (plot) {
+    obj$plot <- shapley.plot(obj,
+                             plot = "bar",
+                             method = method,
+                             cutoff = cutoff,
+                             top_n_features = top_n_features)
+    print(obj$plot)
+  }
+
+  return(obj)
 }
-
 

@@ -179,6 +179,8 @@ shapley <- function(models,
   BASE <- NULL
   w <- NULL
   results <- NULL
+  selectedFeatures <- NULL
+  Plot <- NULL
   feature_importance <- list()
   z <- 0
   pb <- txtProgressBar(z, length(ids), style = 3)
@@ -297,8 +299,8 @@ shapley <- function(models,
   min  <- 0 # min(summaryShaps$mean)/max
 
   summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
-                                                min = min,
-                                                max = max)
+                                            min = min,
+                                            max = max)
 
   summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
                                           min = min,
@@ -312,71 +314,48 @@ shapley <- function(models,
 
   # STEP 4: Feature selection
   # ============================================================
+  selectedFeatures <- summaryShaps[order(summaryShaps$normalized_mean, decreasing = TRUE), ]
   if (!is.null(top_n_features)) {
-    summaryShaps <- summaryShaps[order(summaryShaps$normalized_mean, decreasing = TRUE), ]
-    summaryShaps <- summaryShaps[1:top_n_features, ]
+    selectedFeatures <- selectedFeatures[1:top_n_features, ]
   }
   else {
     if (method == "mean") {
-      summaryShaps <- summaryShaps[summaryShaps$normalized_mean > cutoff, ]
+      selectedFeatures <- selectedFeatures[selectedFeatures$normalized_mean > cutoff, ]
     }
     else if (method == "shapratio") {
-      summaryShaps <- summaryShaps[summaryShaps$shapratio > cutoff, ]
+      selectedFeatures <- selectedFeatures[selectedFeatures$shapratio > cutoff, ]
     }
     else if (method == "lowerCI") {
-      summaryShaps <- summaryShaps[summaryShaps$lowerCI > cutoff, ]
+      selectedFeatures <- selectedFeatures[selectedFeatures$lowerCI > cutoff, ]
     }
     else stop("method must be one of 'mean', 'shapratio', or 'ci'")
   }
 
 
-
-  # STEP 5: PLOT
+  # STEP 5: Create the shapley object
   # ============================================================
-  summaryShaps$feature <- factor(summaryShaps$feature,
-                                 levels = summaryShaps$feature[order(summaryShaps[["normalized_mean"]])])
-  #summaryShaps <<- summaryShaps
-  ftr <- summaryShaps$feature
-  nrmm <- summaryShaps$normalized_mean
-  lci <- summaryShaps$lowerCI
-  uci <- summaryShaps$upperCI
-
-  Plot <- ggplot(data = NULL,
-                 aes(x = ftr,
-                     y = nrmm)) +
-    geom_col(fill = "#07B86B", alpha = 0.8) +
-    geom_errorbar(aes(ymin = lci,
-                      ymax = uci),
-                  width = 0.2, color = "#7A004BF0",
-                  alpha = 0.75, linewidth = 0.7) +
-    coord_flip() +  # Rotating the graph to have mean values on X-axis
-    ggtitle("") +
-    xlab("Features\n") +
-    ylab("\nMean absolute SHAP contributions with 95% CI") +
-    theme_classic() +
-    # Reduce top plot margin
-    theme(plot.margin = margin(t = -0.5,
-                               r = .25,
-                               b = .25,
-                               l = .25,
-                               unit = "cm")) +
-    # Set lower limit of expansion to 0
-    scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
-
-  # To plot or not to plot! That is the question...
-  # ============================================================
-  if (plot) print(Plot)
-
   obj <- list(ids = ids,
               plot = Plot,
               contributionPlot = BASE,
               summaryShaps = summaryShaps,
+              selectedFeatures = selectedFeatures$feature,
               feature_importance = feature_importance,
               weights = w,
               results = results,
               shap_contributions_by_ids = results)
 
   class(obj) <- c("shapley", "list")
+
+  # STEP 6: PLOT
+  # ============================================================
+  if (plot) {
+    obj$plot <- shapley.plot(obj,
+                             plot = "bar",
+                             method = method,
+                             cutoff = cutoff,
+                             top_n_features = top_n_features)
+    print(obj$plot)
+  }
 
   return(obj)
 }
