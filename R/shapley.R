@@ -50,16 +50,16 @@
 # @param sample_size integer. The number of observations to be sampled from the
 #                    data set. The default is all observations provided within
 #                    the newdata.
-#' @param normalize_to character. The default value is "upperCI", which sets the feature with
-#'                     the maximum SHAP value to one, allowing the higher CI to
-#'                     go beyond one. Setting this value is mainly for aesthetic
-#'                     reason to adjust the Plot, but also, it can influence the
-#'                     feature selection process, depending on the method in use,
-#'                     because it changes how the SHAP values should be normalized.
-#'                     the alternative is 'feature', specifying that
-#'                     in the normalization of the SHAP values, the maximum confidence
-#'                     interval of the weighted SHAP values should be equal to
-#'                     "1", in order to limit the plot values to maximum of one.
+# @param normalize_to character. The default value is "upperCI", which sets the feature with
+#                     the maximum SHAP value to one, allowing the higher CI to
+#                     go beyond one. Setting this value is mainly for aesthetic
+#                     reason to adjust the Plot, but also, it can influence the
+#                     feature selection process, depending on the method in use,
+#                     because it changes how the SHAP values should be normalized.
+#                     the alternative is 'feature', specifying that
+#                     in the normalization of the SHAP values, the maximum confidence
+#                     interval of the weighted SHAP values should be equal to
+#                     "1", in order to limit the plot values to maximum of one.
 #' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom stats weighted.mean
 #' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.mcc
@@ -147,9 +147,10 @@ shapley <- function(models,
                     performance_metric = c("aucpr"),
                     method = c("lowerCI"),
                     cutoff = 0.01,
-                    top_n_features = NULL,
+                    top_n_features = NULL
                     #sample_size = nrow(newdata),
-                    normalize_to = "upperCI") {
+                    #normalize_to = "upperCI"
+                    ) {
 
 
   # Syntax check
@@ -246,23 +247,50 @@ shapley <- function(models,
   # STEP 2: Calculate the summary shap values for each feature and store the mean
   #         shap values in a list, for significance testing
   # ============================================================
+  ratioDF <- NULL
+  UNQ     <- unique(results$feature)
   summaryShaps <- data.frame(
-    feature = unique(results$feature),
+    feature = UNQ,
     mean = NA,
     sd = NA,
     ci = NA,
-    normalized_mean = NA,
-    normalized_ci = NA)
+    lowerCI = NA,
+    upperCI = NA)
+
+  # CALCULATE THE TOTAL CONTRIBUTION PER MODEL
+  TOTAL <- colSums(abs(results[, grep("^contribution", names(results))]),
+                   na.rm = TRUE)
 
   #globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
 
-  for (j in unique(results$feature)) {
+  # Calculate the ratio of contribution of each feature per model
+  # -------------------------------------------------------------
+  for (j in UNQ) {
+    # get all contribution columns for the j feature
     tmp <- results[results$feature == j, grep("^contribution", names(results))]
-    tmp <- colSums(abs(tmp))
-    feature_importance[[j]] <- tmp
+    # compute the ratio of absolute shap values for features of all models
+    mat <- matrix(colSums(abs(tmp), na.rm = TRUE) / TOTAL, nrow = 1)
+    # create a matrix
+    ratioDF <- rbind(ratioDF, mat)
+  }
 
-    weighted_mean <- weighted.mean(tmp, w)
-    weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+  # Scale the ratio matrix and create a data frame
+  # -------------------------------------------------------------
+  for (i in 1:ncol(ratioDF)) {
+    ratioDF[,i] <- normalize(abs(ratioDF[,i]), min = 0)
+  }
+  ratioDF <- as.data.frame(ratioDF)
+  names(ratioDF) <- paste0("ratio", 1:ncol(ratioDF))
+  feature <- unique(summaryShaps$feature)
+  ratioDF <- cbind(feature, ratioDF)
+
+  # Cmpute the weighted mean, sd, and ci for each feature
+  # -------------------------------------------------------------
+  for (j in UNQ) {
+    # get all contribution columns for the j feature
+    tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF))]
+    weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
+    weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w, na.rm = TRUE) - 1)
     weighted_sd   <- sqrt(weighted_var)
 
     # update the summaryShaps data frame
@@ -271,13 +299,34 @@ shapley <- function(models,
     summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
   }
 
+  # Compute the lower and upper confidence intervals
+  # -------------------------------------------------------------
+  summaryShaps$lowerCI <- summaryShaps$mean - summaryShaps$ci
+  summaryShaps$upperCI <- summaryShaps$mean + summaryShaps$ci
+
+  # for (j in unique(results$feature)) {
+  #   tmp <- results[results$feature == j, grep("^contribution", names(results))]
+  #   tmp <- colSums(abs(tmp))
+  #   feature_importance[[j]] <- tmp
+  #
+  #   weighted_mean <- weighted.mean(tmp, w)
+  #   weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+  #   weighted_sd   <- sqrt(weighted_var)
+  #
+  #   # update the summaryShaps data frame
+  #   summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
+  #   summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
+  #   summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
+  # }
+
   # Compute row means of SHAP contributions for each subject
   # ============================================================
   cols <- grep("^contribution", names(results))
 
-  for (r in 1:nrow(data)) {
-    data[r, "contribution"] <- weighted.mean(results[r, cols], w)
-  }
+  # for (r in 1:nrow(data)) {
+  #   data[r, "contribution"] <- weighted.mean(results[r, cols], w)
+  # }
+  #???
   BASE$data <- BASE$data[order(BASE$data$Row.names), ]
   BASE$data$contribution <- data$contribution
   BASE$labels$title <- "SHAP Mean Summary Plot\n"
@@ -288,39 +337,39 @@ shapley <- function(models,
   # it should be the ratio of minimum value to the maximum value.
   # The maximum would be the highest mean + the highest CI
 
-  if (normalize_to == "upperCI") {
-    max  <- max(summaryShaps$mean + summaryShaps$ci)
-  }
-  else {
-    max  <- max(summaryShaps$mean)
-  }
+  # if (normalize_to == "upperCI") {
+  #   max  <- max(summaryShaps$mean + summaryShaps$ci)
+  # }
+  # else {
+  #   max  <- max(summaryShaps$mean)
+  # }
 
-  #??? I might still give the minimum value to be zero!
-  min  <- 0 # min(summaryShaps$mean)/max
-
-  summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
-                                            min = min,
-                                            max = max)
-
-  summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
-                                          min = min,
-                                          max = max)
-  # compute relative shap values
-  summaryShaps$shapratio <- summaryShaps$normalized_mean / sum(summaryShaps$normalized_mean)
-
-  # compute lowerCI
-  summaryShaps$lowerCI <- summaryShaps$normalized_mean - summaryShaps$normalized_ci
-  summaryShaps$upperCI <- summaryShaps$normalized_mean + summaryShaps$normalized_ci
+  # #??? I might still give the minimum value to be zero!
+  # min  <- 0 # min(summaryShaps$mean)/max
+  #
+  # summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
+  #                                           min = min,
+  #                                           max = max)
+  #
+  # summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
+  #                                         min = min,
+  #                                         max = max)
+  # # compute relative shap values
+  # summaryShaps$shapratio <- summaryShaps$normalized_mean / sum(summaryShaps$normalized_mean)
+  #
+  # # compute lowerCI
+  # summaryShaps$lowerCI <- summaryShaps$normalized_mean - summaryShaps$normalized_ci
+  # summaryShaps$upperCI <- summaryShaps$normalized_mean + summaryShaps$normalized_ci
 
   # STEP 4: Feature selection
   # ============================================================
-  selectedFeatures <- summaryShaps[order(summaryShaps$normalized_mean, decreasing = TRUE), ]
+  selectedFeatures <- summaryShaps[order(summaryShaps$mean, decreasing = TRUE), ]
   if (!is.null(top_n_features)) {
     selectedFeatures <- selectedFeatures[1:top_n_features, ]
   }
   else {
     if (method == "mean") {
-      selectedFeatures <- selectedFeatures[selectedFeatures$normalized_mean > cutoff, ]
+      selectedFeatures <- selectedFeatures[selectedFeatures$mean > cutoff, ]
     }
     else if (method == "shapratio") {
       selectedFeatures <- selectedFeatures[selectedFeatures$shapratio > cutoff, ]
