@@ -105,12 +105,12 @@ shapley.plot <- function(shapley,
   # ============================================================
   if (!is.null(top_n_features)) {
     shapley$summaryShaps <- shapley$summaryShaps[order(
-      shapley$summaryShaps$normalized_mean, decreasing = TRUE), ]
+      shapley$summaryShaps$mean, decreasing = TRUE), ]
     shapley$summaryShaps <- shapley$summaryShaps[1:top_n_features, ]
   }
   else {
     if (method == "mean") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$normalized_mean > cutoff, ]
+      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
     }
     else if (method == "shapratio") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
@@ -121,9 +121,9 @@ shapley.plot <- function(shapley,
     else stop("method must be one of 'mean', 'shapratio', or 'ci'")
   }
 
-  index <- order(- shapley$summaryShaps$normalized_mean)
+  index <- order(- shapley$summaryShaps$mean)
   features <- shapley$summaryShaps$feature[index]
-  normalized_mean <- shapley$summaryShaps$normalized_mean[index]
+  mean <- shapley$summaryShaps$mean[index]
   shapratio <- shapley$summaryShaps$shapratio[index]
 
   # Print the bar plot
@@ -132,10 +132,10 @@ shapley.plot <- function(shapley,
     shapley$summaryShaps$feature <- factor(
       shapley$summaryShaps$feature,
       levels = shapley$summaryShaps$feature[order(
-        shapley$summaryShaps[["normalized_mean"]])])
+        shapley$summaryShaps[["mean"]])])
     #summaryShaps <<- summaryShaps
     ftr <- shapley$summaryShaps$feature
-    nrmm <- shapley$summaryShaps$normalized_mean
+    nrmm <- shapley$summaryShaps$mean
     lci <- shapley$summaryShaps$lowerCI
     uci <- shapley$summaryShaps$upperCI
 
@@ -164,7 +164,7 @@ shapley.plot <- function(shapley,
 
   else {
     # Calculate the percentages
-    percentage <- round((normalized_mean / sum(normalized_mean) * 100), 2)
+    percentage <- round((mean / sum(mean) * 100), 2)
 
     round_to_half <- function(x) {
       return(round(x * 2) / 2)
