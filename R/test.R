@@ -7,7 +7,7 @@
 #' @param var1 A numeric vector.
 #' @param var2 A numeric vector of the same length as \code{var1}.
 #' @param weights A numeric vector of weights, assumed to be the same for both \code{var1} and \code{var2}.
-#' @param n The number of permutations to perform (default is 1000).
+#' @param n The number of permutations to perform (default is 2000).
 #' @return A list containing the observed difference in means and the p-value of the test.
 # @examples
 # var1 <- rnorm(100)
