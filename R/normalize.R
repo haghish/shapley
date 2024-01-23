@@ -10,7 +10,7 @@
 #' @return normalized numeric vector
 
 normalize <- function(x, min=NULL, max=NULL) {                              # Create user-defined function
-  if (is.null(min)) min <- min(x)
-  if (is.null(max)) max <- max(x)
+  if (is.null(min)) min <- min(x, na.rm = TRUE)
+  if (is.null(max)) max <- max(x, na.rm = TRUE)
   return((x - min) / (max - min))                                           # Return normalized data
 }
