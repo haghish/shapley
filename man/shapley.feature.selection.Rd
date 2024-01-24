@@ -9,7 +9,8 @@ shapley.feature.selection(
   shapley,
   method = "lowerCI",
   cutoff = 0,
-  top_n_features = NULL
+  top_n_features = NULL,
+  features = NULL
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ features with the "method" criteria above zero will be selected.}
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
+
+\item{feature}{character vector, specifying the feature to be plotted.}
 }
 \value{
 normalized numeric vector
