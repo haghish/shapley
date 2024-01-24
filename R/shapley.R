@@ -28,7 +28,7 @@
 #'               important features according to their weighted SHAP values.
 #'               The default selection method is "lowerCI", which includes
 #'               features whose lower weighted confidence interval exceeds the
-#'               predefined 'cutoff' value (default is relative SHAP of 1%).
+#'               predefined 'cutoff' value (default is 0).
 #'               Alternatively, the "mean" option can be specified, indicating
 #'               any feature with normalized weighted mean SHAP contribution above
 #'               the specified 'cutoff' should be selected. Another
@@ -39,7 +39,8 @@
 #'               aggregate of all features, with those surpassing the 'cutoff'
 #'               being selected as top feature.
 #' @param cutoff numeric, specifying the cutoff for the method used for selecting
-#'               the top features.
+#'               the top features. the default is zero, which means that all
+#'               features with the "method" criteria above zero will be selected.
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
 #'                       the 'cutoff' and 'method' arguments.
@@ -146,7 +147,7 @@ shapley <- function(models,
                     family = "binary",
                     performance_metric = c("aucpr"),
                     method = c("lowerCI"),
-                    cutoff = 0.01,
+                    cutoff = 0.0,
                     top_n_features = NULL
                     #sample_size = nrow(newdata),
                     #normalize_to = "upperCI"
@@ -177,25 +178,24 @@ shapley <- function(models,
 
   # Variables definitions
   # ============================================================
-  BASE <- NULL
-  w <- NULL
-  results <- NULL
-  selectedFeatures <- NULL
-  Plot <- NULL
-  feature_importance <- list()
-  z <- 0
-  pb <- txtProgressBar(z, length(ids), style = 3)
+  BASE <- NULL                                           #contribution SHAP plot
+  w <- NULL                                              #performance metric (weight)
+  results <- NULL                                        #data frame of SHAP values
+  selectedFeatures <- NULL                               #list of selected features
+  Plot <- NULL                                           #GGPLOT2 object
+  feature_importance <- list()                           #list of feature importance
+  z <- 0                                                 #counter for the progress bar
+  pb <- txtProgressBar(z, length(ids), style = 3)        #progress bar
 
   # STEP 1: Compute SHAP values and performance metric for each model
   # ============================================================
   for (i in ids) {
     z <- z + 1
     model <- h2o.getModel(i)
-
     m <- h2o.shap_summary_plot(
       model = model,
       newdata = newdata,
-      columns = NULL, #get SHAP for all columns
+      columns = model@allparameters$x, #get SHAP for all predictors
       sample_size = nrow(newdata) #sample_size
     )
 
@@ -209,8 +209,10 @@ shapley <- function(models,
     # create the summary dataset
     # ----------------------------------------------------------
     if (z == 1) {
+      # reserve the first dataset for SHAP cntribution
+      # reserve the first model's data for rowmean shap computation
       BASE <- m
-      data <- m$data #reserve the first model's data for rowmean shap computation
+      data <- m$data
       data <- data[order(data$Row.names), ]
       results <- data[, c("Row.names", "feature", "contribution")]
     }
