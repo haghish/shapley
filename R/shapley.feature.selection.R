@@ -24,13 +24,16 @@
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
 #'                       the 'cutoff' and 'method' arguments.
+#' @param feature character vector, specifying the feature to be plotted.
 #' @author E. F. Haghish
 #' @return normalized numeric vector
+#' @export
 
 shapley.feature.selection <- function(shapley,
                                       method = "lowerCI",
                                       cutoff=0.0,
-                                      top_n_features=NULL) {
+                                      top_n_features=NULL,
+                                      features = NULL) {
 
   # Select the features that meet the criteria
   # ============================================================
@@ -42,23 +45,24 @@ shapley.feature.selection <- function(shapley,
     shapley$contributionPlot$data <- shapley$contributionPlot$data[
       shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
   }
-  else {
-    if (method == "mean") {
+  else if (method == "mean") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
       shapley$contributionPlot$data <- shapley$contributionPlot[
         shapley$contributionPlot$feature %in% shapley$summaryShaps$feature, ]
-    }
-    else if (method == "shapratio") {
+  } else if (method == "shapratio") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
       shapley$contributionPlot$data <- shapley$contributionPlot$data[
         shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
-    }
-    else if (method == "lowerCI") {
+  } else if (method == "lowerCI") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
       shapley$contributionPlot$data <- shapley$contributionPlot$data[
         shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
-    }
-    else stop("method must be one of 'mean', 'shapratio', or 'ci'")
+  } else if (!is.null(features)) {
+      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$feature %in% features, ]
+      shapley$contributionPlot$data <- shapley$contributionPlot$data[
+        shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
+  } else {
+    stop("method must be one of 'mean', 'shapratio', or 'ci'")
   }
 
   # Sort the features based on their mean SHAP values
