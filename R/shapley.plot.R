@@ -22,6 +22,7 @@
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
 #'                       the 'cutoff' and 'method' arguments.
+#' @param feature character vector, specifying the feature to be plotted.
 #' @param legendstyle character, specifying the style of the plot legend, which
 #'                    can be either 'continuous' (default) or 'discrete'. the
 #'                    continuous legend is only applicable to 'shap' plots and
@@ -87,6 +88,7 @@ shapley.plot <- function(shapley,
                          method = "lowerCI",
                          cutoff = 0.0,
                          top_n_features = NULL,
+                         features = NULL,
                          legendstyle = "continuous",
                          scale_colour_gradient = NULL) {
 
@@ -104,9 +106,10 @@ shapley.plot <- function(shapley,
   # Feature selection
   # ============================================================
   select <- shapley.feature.selection(shapley = shapley,
-                                       method = method,
-                                       cutoff = cutoff,
-                                       top_n_features = top_n_features)
+                                      method = method,
+                                      cutoff = cutoff,
+                                      top_n_features = top_n_features,
+                                      features = features)
 
   shapley   <- select$shapley                    # update the data for different plots
   features  <- select$features
