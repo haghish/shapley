@@ -60,7 +60,10 @@ features with the "method" criteria above zero will be selected.}
 
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
-the 'cutoff' and 'method' arguments.}
+the 'cutoff' and 'method' arguments. specifying top_n_feature
+is also a way to reduce computation time, if many features
+are present in the data set. The default is NULL, which means
+the shap values will be computed for all features.}
 }
 \value{
 a list including the GGPLOT2 object, the data frame of SHAP values,

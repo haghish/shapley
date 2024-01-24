@@ -43,7 +43,10 @@
 #'               features with the "method" criteria above zero will be selected.
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
-#'                       the 'cutoff' and 'method' arguments.
+#'                       the 'cutoff' and 'method' arguments. specifying top_n_feature
+#'                       is also a way to reduce computation time, if many features
+#'                       are present in the data set. The default is NULL, which means
+#'                       the shap values will be computed for all features.
 #' @param family character. currently only "binary" classification models trained
 #'               by h2o machine learning are supported.
 #' @param plot logical. if TRUE, the weighted mean and confidence intervals of
