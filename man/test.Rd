@@ -13,7 +13,7 @@ test(var1, var2, weights, n = 2000)
 
 \item{weights}{A numeric vector of weights, assumed to be the same for both \code{var1} and \code{var2}.}
 
-\item{n}{The number of permutations to perform (default is 1000).}
+\item{n}{The number of permutations to perform (default is 2000).}
 }
 \value{
 A list containing the observed difference in means and the p-value of the test.
