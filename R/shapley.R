@@ -356,9 +356,9 @@ shapley <- function(models,
   # summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
   #                                         min = min,
   #                                         max = max)
-  # # compute relative shap values
-  # summaryShaps$shapratio <- summaryShaps$normalized_mean / sum(summaryShaps$normalized_mean)
-  #
+  # compute relative shap values
+  summaryShaps$shapratio <- summaryShaps$mean / sum(summaryShaps$mean)
+
   # # compute lowerCI
   # summaryShaps$lowerCI <- summaryShaps$normalized_mean - summaryShaps$normalized_ci
   # summaryShaps$upperCI <- summaryShaps$normalized_mean + summaryShaps$normalized_ci
