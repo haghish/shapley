@@ -161,6 +161,7 @@ shapley.plot <- function(shapley,
 
     # Calculate the percentages
     percentage <- round((mean / sum(mean) * 100), 2)
+
     shapratio <- round_to_half(shapratio*400)
 
     # Create a factor with the percentage for the legend
@@ -168,7 +169,14 @@ shapley.plot <- function(shapley,
     # Order the legend by descending percentage
     #legend <- factor(legend, levels = legend[order(-percentage)])
     names(shapratio) <- as.character(legend)
-    Plot <- waffle(shapratio, rows = 20, size = 1,
+
+    colors <- NA
+    if (length(shapratio) >= 9) {
+      color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+      colors <- sample(color, length(shapratio))
+    }
+
+    Plot <- waffle(shapratio, rows = 20, size = 1, colors = colors,
                    title = "Weighted mean SHAP contributions",
                    legend_pos = "right")
   }
