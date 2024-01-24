@@ -43,6 +43,8 @@ the top features.}
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
 
+\item{features}{character vector, specifying the feature to be plotted.}
+
 \item{legendstyle}{character, specifying the style of the plot legend, which
 can be either 'continuous' (default) or 'discrete'. the
 continuous legend is only applicable to 'shap' plots and
@@ -50,8 +52,6 @@ other plots only use 'discrete' legend.}
 
 \item{scale_colour_gradient}{character vector for specifying the color gradients
 for the plot.}
-
-\item{feature}{character vector, specifying the feature to be plotted.}
 }
 \value{
 ggplot object

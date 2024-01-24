@@ -24,7 +24,7 @@
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
 #'                       the 'cutoff' and 'method' arguments.
-#' @param feature character vector, specifying the feature to be plotted.
+#' @param features character vector, specifying the feature to be plotted.
 #' @author E. F. Haghish
 #' @return normalized numeric vector
 #' @export

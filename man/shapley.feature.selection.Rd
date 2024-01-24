@@ -39,7 +39,7 @@ features with the "method" criteria above zero will be selected.}
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
 
-\item{feature}{character vector, specifying the feature to be plotted.}
+\item{features}{character vector, specifying the feature to be plotted.}
 }
 \value{
 normalized numeric vector

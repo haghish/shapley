@@ -22,7 +22,7 @@
 #' @param top_n_features integer. if specified, the top n features with the
 #'                       highest weighted SHAP values will be selected, overrullung
 #'                       the 'cutoff' and 'method' arguments.
-#' @param feature character vector, specifying the feature to be plotted.
+#' @param features character vector, specifying the feature to be plotted.
 #' @param legendstyle character, specifying the style of the plot legend, which
 #'                    can be either 'continuous' (default) or 'discrete'. the
 #'                    continuous legend is only applicable to 'shap' plots and
