@@ -13,9 +13,8 @@ shapley(
   family = "binary",
   performance_metric = c("aucpr"),
   method = c("lowerCI"),
-  cutoff = 0.01,
-  top_n_features = NULL,
-  normalize_to = "upperCI"
+  cutoff = 0,
+  top_n_features = NULL
 )
 }
 \arguments{
@@ -44,7 +43,7 @@ and "f2" (F2 score).}
 important features according to their weighted SHAP values.
 The default selection method is "lowerCI", which includes
 features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1%).
+predefined 'cutoff' value (default is 0).
 Alternatively, the "mean" option can be specified, indicating
 any feature with normalized weighted mean SHAP contribution above
 the specified 'cutoff' should be selected. Another
@@ -56,22 +55,12 @@ aggregate of all features, with those surpassing the 'cutoff'
 being selected as top feature.}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features.}
+the top features. the default is zero, which means that all
+features with the "method" criteria above zero will be selected.}
 
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
-
-\item{normalize_to}{character. The default value is "upperCI", which sets the feature with
-the maximum SHAP value to one, allowing the higher CI to
-go beyond one. Setting this value is mainly for aesthetic
-reason to adjust the Plot, but also, it can influence the
-feature selection process, depending on the method in use,
-because it changes how the SHAP values should be normalized.
-the alternative is 'feature', specifying that
-in the normalization of the SHAP values, the maximum confidence
-interval of the weighted SHAP values should be equal to
-"1", in order to limit the plot values to maximum of one.}
 }
 \value{
 a list including the GGPLOT2 object, the data frame of SHAP values,
