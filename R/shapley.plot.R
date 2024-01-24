@@ -84,8 +84,8 @@
 
 shapley.plot <- function(shapley,
                          plot = "bar",
-                         method = "mean",
-                         cutoff = 0.01,
+                         method = "lowerCI",
+                         cutoff = 0.0,
                          top_n_features = NULL,
                          legendstyle = "continuous",
                          scale_colour_gradient = NULL) {
@@ -187,6 +187,7 @@ shapley.plot <- function(shapley,
 
       # STEP 3: PLOT
       # ============================================================
+
       Plot <- shapley$contributionPlot +
         ggtitle("") +
         xlab("Features\n") +
