@@ -192,12 +192,28 @@ shapley <- function(models,
   for (i in ids) {
     z <- z + 1
     model <- h2o.getModel(i)
-    m <- h2o.shap_summary_plot(
-      model = model,
-      newdata = newdata,
-      columns = model@allparameters$x, #get SHAP for all predictors
-      sample_size = nrow(newdata) #sample_size
-    )
+
+    # if top_n_features is not specified, evaluate SHAP for ALL FEATURES,
+    # otherwise, evaluate SHAP for the top_n_features. Evaluating SHAP for
+    # all features can be very time consuming. Otherwise, there is no other
+    # reason to limit the number of features.
+    if (!is.null(top_n_features)) {
+      m <- h2o.shap_summary_plot(
+        model = model,
+        newdata = newdata,
+        top_n_features = top_n_features,
+        sample_size = nrow(newdata) #sample_size
+      )
+    }
+    else {
+      m <- h2o.shap_summary_plot(
+        model = model,
+        newdata = newdata,
+        columns = model@allparameters$x, #get SHAP for all predictors
+        sample_size = nrow(newdata) #sample_size
+      )
+    }
+
 
     # Extract the performance metrics
     # ----------------------------------------------------------
