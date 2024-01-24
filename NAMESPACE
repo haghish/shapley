@@ -2,6 +2,7 @@
 
 export(h2o.get_ids)
 export(shapley)
+export(shapley.feature.selection)
 export(shapley.plot)
 export(shapley.test)
 export(shapley.top)
