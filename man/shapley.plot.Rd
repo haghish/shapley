@@ -10,6 +10,7 @@ shapley.plot(
   method = "lowerCI",
   cutoff = 0,
   top_n_features = NULL,
+  features = NULL,
   legendstyle = "continuous",
   scale_colour_gradient = NULL
 )
@@ -49,6 +50,8 @@ other plots only use 'discrete' legend.}
 
 \item{scale_colour_gradient}{character vector for specifying the color gradients
 for the plot.}
+
+\item{feature}{character vector, specifying the feature to be plotted.}
 }
 \value{
 ggplot object
