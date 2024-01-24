@@ -46,21 +46,21 @@ shapley.feature.selection <- function(shapley,
       shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
   }
   else if (method == "mean") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
-      shapley$contributionPlot$data <- shapley$contributionPlot[
-        shapley$contributionPlot$feature %in% shapley$summaryShaps$feature, ]
+    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
+    shapley$contributionPlot$data <- shapley$contributionPlot[
+      shapley$contributionPlot$feature %in% shapley$summaryShaps$feature, ]
   } else if (method == "shapratio") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
-      shapley$contributionPlot$data <- shapley$contributionPlot$data[
-        shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
+    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
+    shapley$contributionPlot$data <- shapley$contributionPlot$data[
+      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
   } else if (method == "lowerCI") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
-      shapley$contributionPlot$data <- shapley$contributionPlot$data[
-        shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
+    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
+    shapley$contributionPlot$data <- shapley$contributionPlot$data[
+      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
   } else if (!is.null(features)) {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$feature %in% features, ]
-      shapley$contributionPlot$data <- shapley$contributionPlot$data[
-        shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
+    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$feature %in% features, ]
+    shapley$contributionPlot$data <- shapley$contributionPlot$data[
+      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
   } else {
     stop("method must be one of 'mean', 'shapratio', or 'ci'")
   }
