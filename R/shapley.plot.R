@@ -103,28 +103,16 @@ shapley.plot <- function(shapley,
 
   # Feature selection
   # ============================================================
-  if (!is.null(top_n_features)) {
-    shapley$summaryShaps <- shapley$summaryShaps[order(
-      shapley$summaryShaps$mean, decreasing = TRUE), ]
-    shapley$summaryShaps <- shapley$summaryShaps[1:top_n_features, ]
-  }
-  else {
-    if (method == "mean") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
-    }
-    else if (method == "shapratio") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
-    }
-    else if (method == "lowerCI") {
-      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
-    }
-    else stop("method must be one of 'mean', 'shapratio', or 'ci'")
-  }
+  select <- shapley.feature.selection(shapley = shapley,
+                                       method = method,
+                                       cutoff = cutoff,
+                                       top_n_features = top_n_features)
 
-  index <- order(- shapley$summaryShaps$mean)
-  features <- shapley$summaryShaps$feature[index]
-  mean <- shapley$summaryShaps$mean[index]
-  shapratio <- shapley$summaryShaps$shapratio[index]
+  shapley   <- select$shapley                    # update the data for different plots
+  features  <- select$features
+  mean      <- select$mean
+  shapratio <- select$shapratio
+
 
   # Print the bar plot
   # ============================================================
@@ -162,83 +150,81 @@ shapley.plot <- function(shapley,
       scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
   }
 
-  else {
-    # Calculate the percentages
-    percentage <- round((mean / sum(mean) * 100), 2)
+  else if (plot == "waffle") {
 
     round_to_half <- function(x) {
       return(round(x * 2) / 2)
     }
+
+    # Calculate the percentages
+    percentage <- round((mean / sum(mean) * 100), 2)
     shapratio <- round_to_half(shapratio*400)
 
     # Create a factor with the percentage for the legend
     legend <- paste0(features, " (", percentage, "%)")
     # Order the legend by descending percentage
     #legend <- factor(legend, levels = legend[order(-percentage)])
+    names(shapratio) <- as.character(legend)
+    Plot <- waffle(shapratio, rows = 20, size = 1,
+                   title = "Weighted mean SHAP contributions",
+                   legend_pos = "right")
+  }
 
-    if (plot == "waffle") {
-      names(shapratio) <- as.character(legend)
-      Plot <- waffle(shapratio, rows = 20, size = 1,
-                     title = "Weighted mean SHAP contributions",
-                     legend_pos = "right")
+  else if (plot == "shap") {
+    # STEP 3: PLOT
+    # ============================================================
+    Plot <- shapley$contributionPlot +
+      ggtitle("") +
+      xlab("Features\n") +
+      ylab("\nSHAP contribution") +
+      theme_classic() +
+      labs(colour = "Normalized values") +
+      theme(
+        legend.position="top",
+        legend.justification = "right",
+        legend.title.align = 0.5,
+        legend.direction = "horizontal",
+        legend.text=element_text(colour="black", size=6, face="bold"),
+        legend.key.height = grid::unit(0.3, "cm"),
+        legend.key.width = grid::unit(1, "cm"),
+        #legend.margin=margin(grid::unit(0,"cm")),
+        legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        plot.margin = margin(t = -0.5, r = .25, b = .25, l = .25, unit = "cm")  # Reduce top plot margin
+      ) +
+      guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
+
+    if (legendstyle == "continuous") {
+      # Set color range
     }
 
-    if (plot == "shap") {
-
-      # STEP 3: PLOT
-      # ============================================================
-
-      Plot <- shapley$contributionPlot +
-        ggtitle("") +
-        xlab("Features\n") +
-        ylab("\nSHAP contribution") +
-        theme_classic() +
-        labs(colour = "Normalized values") +
-        theme(
-          legend.position="top",
-          legend.justification = "right",
-          legend.title.align = 0.5,
-          legend.direction = "horizontal",
-          legend.text=element_text(colour="black", size=6, face="bold"),
-          legend.key.height = grid::unit(0.3, "cm"),
-          legend.key.width = grid::unit(1, "cm"),
-          #legend.margin=margin(grid::unit(0,"cm")),
-          legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
-          plot.margin = margin(t = -0.5, r = .25, b = .25, l = .25, unit = "cm")  # Reduce top plot margin
-        ) +
-        guides(colour = guide_colourbar(title.position = "top", title.hjust = 0.5))
-
-      if (legendstyle == "continuous") {
-        # Set color range
-      }
-
-      else if (legendstyle == "discrete") {
-        Plot <- Plot +
-          guides(colour = guide_legend(title.position = "top",
-                                       title.hjust = 0.5,
-                                       legend.margin = margin(t = -1, unit = "cm"),
-                                       override.aes = list(size = 3)
-          )) +
-          theme(legend.key.height = grid::unit(0.4, "cm"),
-                legend.key.width = grid::unit(0.4, "cm"))
-      }
-
-      # Fix the color scale of the model
-      # ============================================================
-      if (length(scale_colour_gradient) == 3) {
-        Plot <- Plot +
-          scale_colour_gradient2(low=scale_colour_gradient[1],
-                                 mid=scale_colour_gradient[2],
-                                 high=scale_colour_gradient[3],
-                                 midpoint = 0.5)
-      }
+    else if (legendstyle == "discrete") {
+      Plot <- Plot +
+        guides(colour = guide_legend(title.position = "top",
+                                     title.hjust = 0.5,
+                                     legend.margin = margin(t = -1, unit = "cm"),
+                                     override.aes = list(size = 3)
+        )) +
+        theme(legend.key.height = grid::unit(0.4, "cm"),
+              legend.key.width = grid::unit(0.4, "cm"))
     }
+
+    # Fix the color scale of the model
+    # ============================================================
+    if (length(scale_colour_gradient) == 3) {
+      Plot <- Plot +
+        scale_colour_gradient2(low=scale_colour_gradient[1],
+                               mid=scale_colour_gradient[2],
+                               high=scale_colour_gradient[3],
+                               midpoint = 0.5)
+    }
+  }
+  else {
+    stop("plot must be either 'bar', 'waffle', or 'shap'")
   }
 
 
 
   print(Plot)
-
   return(Plot)
 }
 
