@@ -325,20 +325,21 @@ shapley <- function(models,
   summaryShaps$lowerCI <- summaryShaps$mean - summaryShaps$ci
   summaryShaps$upperCI <- summaryShaps$mean + summaryShaps$ci
 
-  # for (j in unique(results$feature)) {
-  #   tmp <- results[results$feature == j, grep("^contribution", names(results))]
-  #   tmp <- colSums(abs(tmp))
-  #   feature_importance[[j]] <- tmp
-  #
-  #   weighted_mean <- weighted.mean(tmp, w)
-  #   weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
-  #   weighted_sd   <- sqrt(weighted_var)
-  #
-  #   # update the summaryShaps data frame
-  #   summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
-  #   summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
-  #   summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
-  # }
+  # feature_importance is used by shapley.test function
+  for (j in unique(results$feature)) {
+    tmp <- results[results$feature == j, grep("^contribution", names(results))]
+    tmp <- colSums(abs(tmp))
+    feature_importance[[j]] <- tmp
+
+    # weighted_mean <- weighted.mean(tmp, w)
+    # weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+    # weighted_sd   <- sqrt(weighted_var)
+    #
+    # # update the summaryShaps data frame
+    # summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
+    # summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
+    # summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
+  }
 
   # Compute row means of SHAP contributions for each subject
   # ============================================================
