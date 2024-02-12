@@ -6,7 +6,7 @@
 
 <a href="https://github.com/haghish/shapley"><img src='man/figures/logo.png' align="right" height="200" /></a>
   
-  __`shapley`__ : Weighted Mean Shapley Values with Confidence Intervals for Machine Learning Grids and Stacked Ensembles
+  __`shapley`__ : Weighted Mean SHAP for Feature Importance Assesment and Selection in Machine Learning Grid and Ensemble
 ================================================================================
 
 ## Introduction
