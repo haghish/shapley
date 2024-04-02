@@ -302,7 +302,7 @@ shapley <- function(models,
   }
   ratioDF <- as.data.frame(ratioDF)
   names(ratioDF) <- paste0("ratio", 1:ncol(ratioDF))
-  feature <- unique(summaryShaps$feature)
+  feature <- unique(summaryShaps$feature)              #??? summaryShaps should be empty by now???
   ratioDF <- cbind(feature, ratioDF)
 
   # Cmpute the weighted mean, sd, and ci for each feature
