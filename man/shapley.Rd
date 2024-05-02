@@ -34,7 +34,7 @@ used for weighting the SHAP values (mean and 95% CI). The default is
 "r2" (R Squared).
 For binary classification, other options include
 "aucpr" (area under the precision-recall curve),
-"auc" (area under the ROC curve), "mcc" (Matthews correlation coefficient),
+"auc" (area under the ROC curve),
 and "f2" (F2 score).}
 
 \item{method}{character, specifying the method used for identifying the most
@@ -142,7 +142,8 @@ result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucp
 library(autoEnsemble)
 ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
 autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
-result3 <- shapley(models = autoSearch, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
+result3 <- shapley(models = autoSearch, newdata = prostate,
+                   performance_metric = "aucpr", plot = TRUE)
 
 
 }
