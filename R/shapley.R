@@ -21,8 +21,10 @@
 #'                on the training dataset will be reported.
 #' @param performance_metric character, specifying the performance metric to be
 #'                           used for weighting the SHAP values (mean and 95% CI). The default is
-#'                           "aucpr" (area under the precision-recall curve). Other options include
-#'                           "auc" (area under the ROC curve), "mcc" (Matthews correlation coefficient),
+#'                           "r2" (R Squared).
+#'                           For binary classification, other options include
+#'                           "aucpr" (area under the precision-recall curve),
+#'                           "auc" (area under the ROC curve),
 #'                           and "f2" (F2 score).
 #' @param method character, specifying the method used for identifying the most
 #'               important features according to their weighted SHAP values.
@@ -47,8 +49,6 @@
 #'                       is also a way to reduce computation time, if many features
 #'                       are present in the data set. The default is NULL, which means
 #'                       the shap values will be computed for all features.
-#' @param family character. currently only "binary" classification models trained
-#'               by h2o machine learning are supported.
 #' @param plot logical. if TRUE, the weighted mean and confidence intervals of
 #'             the SHAP values are plotted. The default is TRUE.
 # @param sample_size integer. The number of observations to be sampled from the
@@ -66,7 +66,7 @@
 #                     "1", in order to limit the plot values to maximum of one.
 #' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom stats weighted.mean
-#' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.mcc
+#' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.r2
 #'             h2o.F2 h2o.mean_per_class_error h2o.giniCoef h2o.accuracy
 #'             h2o.shap_summary_plot
 # @importFrom h2otools h2o.get_ids
@@ -112,7 +112,7 @@
 #' ### call 'shapley' function to compute the weighted mean and weighted confidence intervals
 #' ### of SHAP values across all trained models.
 #' ### Note that the 'newdata' should be the testing dataset!
-#' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
+#' result <- shapley(models = aml, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 #'
 #' #######################################################
 #' ### PREPARE H2O Grid (takes a couple of minutes)
@@ -126,7 +126,7 @@
 #'                  seed = 2023, fold_assignment = "Modulo", nfolds = 10,
 #'                  keep_cross_validation_predictions = TRUE)
 #'
-#' result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
+#' result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 #'
 #' #######################################################
 #' ### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
@@ -138,7 +138,7 @@
 #' library(autoEnsemble)
 #' ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
 #' autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
-#' result3 <- shapley(models = autoSearch, newdata = prostate, plot = TRUE)
+#' result3 <- shapley(models = autoSearch, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 #'
 #'
 #' }
@@ -147,8 +147,7 @@
 shapley <- function(models,
                     newdata,
                     plot = TRUE,
-                    family = "binary",
-                    performance_metric = c("aucpr"),
+                    performance_metric = c("r2"),
                     method = c("lowerCI"),
                     cutoff = 0.0,
                     top_n_features = NULL
@@ -156,14 +155,17 @@ shapley <- function(models,
                     #normalize_to = "upperCI"
                     ) {
 
-
   # Syntax check
   # ============================================================
-  if (family != "binary") stop("currently only binary classification models from 'h2o' and 'autoEnsemble' are supported")
-  if (performance_metric != "aucpr" &
+  if (performance_metric != "r2" &
+      # performance_metric != "mse" &
+      # performance_metric != "rmse" &
+      # performance_metric != "rmsle" &
+      # performance_metric != "mle" &
+      performance_metric != "aucpr" &
       performance_metric != "auc" &
-      performance_metric != "mcc" &
-      performance_metric != "f2") stop("performance metric must be one of 'aucpr', 'auc', 'mcc', or 'f2'")
+      # performance_metric != "mcc" &
+      performance_metric != "f2") stop("performance metric must be 'r2', 'aucpr', 'auc', or 'f2'")
 
   # STEP 0: prepare the models, by either confirming that the models are 'h2o' or 'autoEnsemble'
   #        or by extracting the model IDs from these objects
@@ -217,10 +219,17 @@ shapley <- function(models,
       )
     }
 
-
-    # Extract the performance metrics
+    # Compute performance metrics
     # ----------------------------------------------------------
-    if (performance_metric == "aucpr") w <- c(w, h2o.aucpr(model))
+    # for regression and classification
+    if (performance_metric == "r2") w <- c(w, h2o.r2(model))
+    # else if (performance_metric == "mse") w <- c(w, h2o.mse(model))
+    # else if (performance_metric == "rmse") w <- c(w, h2o.rmse(model))
+    # else if (performance_metric == "rmsle") w <- c(w, h2o.rmsle(model))
+    # else if (performance_metric == "mae") w <- c(w, h2o.mae(model))
+
+    # for classification
+    else if (performance_metric == "aucpr") w <- c(w, h2o.aucpr(model))
     else if (performance_metric == "auc") w <- c(w, h2o.auc(model))
     else if (performance_metric == "mcc") w <- c(w, h2o.mcc(model))
     else if (performance_metric == "f2") w <- c(w, h2o.F2(model))
