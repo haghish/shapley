@@ -138,7 +138,8 @@
 #' library(autoEnsemble)
 #' ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
 #' autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
-#' result3 <- shapley(models = autoSearch, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
+#' result3 <- shapley(models = autoSearch, newdata = prostate,
+#'                    performance_metric = "aucpr", plot = TRUE)
 #'
 #'
 #' }
@@ -231,7 +232,7 @@ shapley <- function(models,
     # for classification
     else if (performance_metric == "aucpr") w <- c(w, h2o.aucpr(model))
     else if (performance_metric == "auc") w <- c(w, h2o.auc(model))
-    else if (performance_metric == "mcc") w <- c(w, h2o.mcc(model))
+    #else if (performance_metric == "mcc") w <- c(w, h2o.mcc(model))
     else if (performance_metric == "f2") w <- c(w, h2o.F2(model))
 
     # create the summary dataset
