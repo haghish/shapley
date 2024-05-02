@@ -63,7 +63,7 @@ grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
                  seed = 2023, fold_assignment = "Modulo", nfolds = 10,
                  keep_cross_validation_predictions = TRUE)
 
-result <- shapley(grid, newdata = prostate, plot = TRUE)
+result <- shapley(grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 ```
 
 In the example above, the `result` object would be a _list of class `shapley`_, which in cludes the information such as weighted mean and weighted confidence intervals as well as other metrics regarding SHAP contributions of different features. 
