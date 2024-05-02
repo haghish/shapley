@@ -10,8 +10,7 @@ shapley(
   models,
   newdata,
   plot = TRUE,
-  family = "binary",
-  performance_metric = c("aucpr"),
+  performance_metric = c("r2"),
   method = c("lowerCI"),
   cutoff = 0,
   top_n_features = NULL
@@ -30,12 +29,11 @@ on the training dataset will be reported.}
 \item{plot}{logical. if TRUE, the weighted mean and confidence intervals of
 the SHAP values are plotted. The default is TRUE.}
 
-\item{family}{character. currently only "binary" classification models trained
-by h2o machine learning are supported.}
-
 \item{performance_metric}{character, specifying the performance metric to be
 used for weighting the SHAP values (mean and 95% CI). The default is
-"aucpr" (area under the precision-recall curve). Other options include
+"r2" (R Squared).
+For binary classification, other options include
+"aucpr" (area under the precision-recall curve),
 "auc" (area under the ROC curve), "mcc" (Matthews correlation coefficient),
 and "f2" (F2 score).}
 
@@ -118,7 +116,7 @@ aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
 ### call 'shapley' function to compute the weighted mean and weighted confidence intervals
 ### of SHAP values across all trained models.
 ### Note that the 'newdata' should be the testing dataset!
-result <- shapley(models = aml, newdata = prostate, plot = TRUE)
+result <- shapley(models = aml, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 
 #######################################################
 ### PREPARE H2O Grid (takes a couple of minutes)
@@ -132,7 +130,7 @@ grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
                  seed = 2023, fold_assignment = "Modulo", nfolds = 10,
                  keep_cross_validation_predictions = TRUE)
 
-result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
+result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 
 #######################################################
 ### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
@@ -144,7 +142,7 @@ result2 <- shapley(models = grid, newdata = prostate, plot = TRUE)
 library(autoEnsemble)
 ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
 autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
-result3 <- shapley(models = autoSearch, newdata = prostate, plot = TRUE)
+result3 <- shapley(models = autoSearch, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 
 
 }
