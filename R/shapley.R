@@ -26,6 +26,22 @@
 #'                           "aucpr" (area under the precision-recall curve),
 #'                           "auc" (area under the ROC curve),
 #'                           and "f2" (F2 score).
+#' @param standardize_performance_metric logical. if TRUE, performance_metric, which is
+#'                                       used as weights vector is standardized such
+#'                                       that the sum of the weights vector would be equal
+#'                                       to the length of the vector. the default value
+#'                                       is FALSE.
+#' @param performance_type character, specifying where the performance metric should
+#'                         be retrieved from. "train" means the performance of the
+#'                         training process should be reported, "valid" indicates that
+#'                         the performance of the validation process should be reported,
+#'                         and "xval" means the cross-validation performance to be
+#'                         retrieved.
+#' @param minimum_performance the minimum performance metric for a recognizable model.
+#'                            any model with performance equal or lower than this
+#'                            argument will have weight of zero in computing the
+#'                            weighted mean and CI SHAP values. the default value is
+#'                            zero.
 #' @param method character, specifying the method used for identifying the most
 #'               important features according to their weighted SHAP values.
 #'               The default selection method is "lowerCI", which includes
@@ -51,9 +67,6 @@
 #'                       the shap values will be computed for all features.
 #' @param plot logical. if TRUE, the weighted mean and confidence intervals of
 #'             the SHAP values are plotted. The default is TRUE.
-# @param sample_size integer. The number of observations to be sampled from the
-#                    data set. The default is all observations provided within
-#                    the newdata.
 # @param normalize_to character. The default value is "upperCI", which sets the feature with
 #                     the maximum SHAP value to one, allowing the higher CI to
 #                     go beyond one. Setting this value is mainly for aesthetic
@@ -147,26 +160,48 @@
 
 shapley <- function(models,
                     newdata,
+                    n = NULL,
                     plot = TRUE,
-                    performance_metric = c("r2"),
+                    performance_metric = "r2",
+                    standardize_performance_metric = FALSE,
+                    performance_type = "xval",
+                    minimum_performance = 0,
                     method = c("lowerCI"),
                     cutoff = 0.0,
                     top_n_features = NULL
-                    #sample_size = nrow(newdata),
                     #normalize_to = "upperCI"
                     ) {
+
+  # Variables definitions
+  # ============================================================
+  BASE <- NULL                                           #contribution SHAP plot
+  w <- NULL                                              #performance metric (weight)
+  results <- NULL                                        #data frame of SHAP values
+  selectedFeatures <- NULL                               #list of selected features
+  Plot <- NULL                                           #GGPLOT2 object
+  feature_importance <- list()                           #list of feature importance
+  z <- 0                                                 #counter for the progress bar
+
+  # models with low minimum_performance are stored in 'ignored_models' data.frame
+  ignored_models  <- data.frame(id = character(), performance = numeric())
+  included_models <- NULL
+
+  # Where should the performance type be retrieved from?
+  train <- FALSE
+  valid <- FALSE
+  xval  <- FALSE
 
   # Syntax check
   # ============================================================
   if (performance_metric != "r2" &
-      # performance_metric != "mse" &
-      # performance_metric != "rmse" &
-      # performance_metric != "rmsle" &
-      # performance_metric != "mle" &
       performance_metric != "aucpr" &
       performance_metric != "auc" &
-      # performance_metric != "mcc" &
       performance_metric != "f2") stop("performance metric must be 'r2', 'aucpr', 'auc', or 'f2'")
+
+  if (performance_type == "train")      train <- TRUE
+  else if (performance_type == "valid") valid <- TRUE
+  else if (performance_type == "xval")  xval  <- TRUE
+  else stop("performance_type must be 'train', 'valid', or 'xval'")
 
   # STEP 0: prepare the models, by either confirming that the models are 'h2o' or 'autoEnsemble'
   #        or by extracting the model IDs from these objects
@@ -182,89 +217,106 @@ shapley <- function(models,
     ids <- models
   }
 
-  # Variables definitions
-  # ============================================================
-  BASE <- NULL                                           #contribution SHAP plot
-  w <- NULL                                              #performance metric (weight)
-  results <- NULL                                        #data frame of SHAP values
-  selectedFeatures <- NULL                               #list of selected features
-  Plot <- NULL                                           #GGPLOT2 object
-  feature_importance <- list()                           #list of feature importance
-  z <- 0                                                 #counter for the progress bar
-  pb <- txtProgressBar(z, length(ids), style = 3)        #progress bar
+  # Initiate the progress bar after identifying the ids
+  # ------------------------------------------------------------
+  pb <- txtProgressBar(z, length(ids), style = 3)
 
   # STEP 1: Compute SHAP values and performance metric for each model
   # ============================================================
   for (i in ids) {
     z <- z + 1
+    performance <- NULL
     model <- h2o.getModel(i)
-
-    # if top_n_features is not specified, evaluate SHAP for ALL FEATURES,
-    # otherwise, evaluate SHAP for the top_n_features. Evaluating SHAP for
-    # all features can be very time consuming. Otherwise, there is no other
-    # reason to limit the number of features.
-    if (!is.null(top_n_features)) {
-      m <- h2o.shap_summary_plot(
-        model = model,
-        newdata = newdata,
-        top_n_features = top_n_features,
-        sample_size = nrow(newdata) #sample_size
-      )
-    }
-    else {
-      m <- h2o.shap_summary_plot(
-        model = model,
-        newdata = newdata,
-        columns = model@allparameters$x, #get SHAP for all predictors
-        sample_size = nrow(newdata) #sample_size
-      )
-    }
 
     # Compute performance metrics
     # ----------------------------------------------------------
     # for regression and classification
-    if (performance_metric == "r2") w <- c(w, h2o.r2(model))
-    # else if (performance_metric == "mse") w <- c(w, h2o.mse(model))
-    # else if (performance_metric == "rmse") w <- c(w, h2o.rmse(model))
-    # else if (performance_metric == "rmsle") w <- c(w, h2o.rmsle(model))
-    # else if (performance_metric == "mae") w <- c(w, h2o.mae(model))
+    if (performance_metric == "r2") performance <- h2o.r2(model, train = train, valid = valid, xval = xval)
 
     # for classification
-    else if (performance_metric == "aucpr") w <- c(w, h2o.aucpr(model))
-    else if (performance_metric == "auc") w <- c(w, h2o.auc(model))
-    #else if (performance_metric == "mcc") w <- c(w, h2o.mcc(model))
-    else if (performance_metric == "f2") w <- c(w, h2o.F2(model))
+    else if (performance_metric == "aucpr") performance <- h2o.aucpr(model, train = train, valid = valid, xval = xval)
+    else if (performance_metric == "auc") performance <- h2o.auc(model, train = train, valid = valid, xval = xval)
+    else if (performance_metric == "f2") performance <- h2o.F2(model)
 
-    # create the summary dataset
+    # If the performance of the model is below the minimum_performance,
+    # ignore processing the model to save runtime
     # ----------------------------------------------------------
-    if (z == 1) {
-      # reserve the first dataset for SHAP cntribution
-      # reserve the first model's data for rowmean shap computation
-      BASE <- m
-      data <- m$data
-      data <- data[order(data$Row.names), ]
-      results <- data[, c("Row.names", "feature", "contribution")]
+    if (performance <= minimum_performance) {
+      ignored_models <- rbind(ignored_models, c(i, performance), make.row.names=F)
     }
+
+    # otherwise, continue processing the model
+    # ----------------------------------------------------------
     else {
-      holder <- m$data[, c("Row.names", "feature", "contribution")]
-      colnames(holder) <- c("Row.names", "feature", paste0("contribution", z))
-      holder <- holder[order(holder$Row.names), ]
-      #results <- cbind(results, holder[, 2, drop = FALSE])
+      included_models <- c(included_models, i)
+      w <- c(w, performance)
 
-      # NOTE: instead of cbind, use merge because the number of "important" features
-      # are not identical according to different models. therefore, merge the
-      # datasets and if a new feature is added, then the value of this this
-      # feature for previous models should be zero
+      # if top_n_features is not specified, evaluate SHAP for ALL FEATURES,
+      # otherwise, evaluate SHAP for the top_n_features. Evaluating SHAP for
+      # all features can be very time consuming. Otherwise, there is no other
+      # reason to limit the number of features.
+      if (!is.null(top_n_features)) {
+        m <- h2o.shap_summary_plot(
+          model = model,
+          newdata = newdata,
+          top_n_features = top_n_features,
+          sample_size = nrow(newdata)
+        )
+      }
+      else {
+        m <- h2o.shap_summary_plot(
+          model = model,
+          newdata = newdata,
+          columns = model@allparameters$x, #get SHAP for all predictors
+          sample_size = nrow(newdata)
+        )
+      }
 
-      results <- merge(results, holder, by="Row.names", all = T)
+      # create the summary dataset
+      # ----------------------------------------------------------
+      if (length(included_models) == 1) {
+        # reserve the first dataset for SHAP cntribution
+        # reserve the first model's data for rowmean shap computation
+        BASE <- m
+        data <- m$data
+        data <- data[order(data$Row.names), ]
+        results <- data[, c("Row.names", "feature", "contribution")]
+      }
+      else if (length(included_models) > 1) {
+        holder <- m$data[, c("Row.names", "feature", "contribution")]
+        colnames(holder) <- c("Row.names", "feature", paste0("contribution", z))
+        holder <- holder[order(holder$Row.names), ]
+        #results <- cbind(results, holder[, 2, drop = FALSE])
 
-      findex <- is.na(results[,"feature.x"])
-      results[findex,"feature.x"] <- results[findex,"feature.y"]
-      results[,"feature.y"] <- NULL
-      names(results)[names(results) == "feature.x"] <- "feature"
+        # NOTE: instead of cbind, use merge because the number of "important" features
+        # are not identical according to different models. therefore, merge the
+        # datasets and if a new feature is added, then the value of this this
+        # feature for previous models should be zero
+
+        results <- merge(results, holder, by="Row.names", all = T)
+
+        findex <- is.na(results[,"feature.x"])
+        results[findex,"feature.x"] <- results[findex,"feature.y"]
+        results[,"feature.y"] <- NULL
+        names(results)[names(results) == "feature.x"] <- "feature"
+      }
     }
 
     setTxtProgressBar(pb, z)
+  }
+
+  # Check that the sum of weights are larger than 1 to avoid negative variance computation
+  # ============================================================
+  if (sum(w) <= 1 & !standardize_performance_metric) stop("sum of model(s) performance weight(s) are lower than 1. enable 'standardize_performance_metric' by setting it to TRUE")
+  else if (standardize_performance_metric) w <- w * length(w) / sum(w)
+
+  # notify the user about ignored models
+  # ============================================================
+  if (nrow(ignored_models) > 0) {
+    colnames(ignored_models) <- c("id", "performance")
+    warning(paste(nrow(ignored_models),
+                  "models did not meet the minimum_performance criteria and were excluded.
+                  see 'ignored_models' in the returned shapley object"))
   }
 
   # ???
@@ -292,7 +344,7 @@ shapley <- function(models,
   TOTAL <- colSums(abs(results[, grep("^contribution", names(results))]),
                    na.rm = TRUE)
 
-  #globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
+#globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
 
   # Calculate the ratio of contribution of each feature per model
   # -------------------------------------------------------------
@@ -321,9 +373,11 @@ shapley <- function(models,
     # get all contribution columns for the j feature
     tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF))]
     weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
-    weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w, na.rm = TRUE) - 1)
+    weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
+XX<<-    weighted_var
+print(weighted_var)
     weighted_sd   <- sqrt(weighted_var)
-
+print(weighted_sd)
     # update the summaryShaps data frame
     summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
     summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
@@ -335,20 +389,20 @@ shapley <- function(models,
   summaryShaps$lowerCI <- summaryShaps$mean - summaryShaps$ci
   summaryShaps$upperCI <- summaryShaps$mean + summaryShaps$ci
 
-  # feature_importance is used by shapley.test function
+  # compute feature_importance used by shapley.test function
+  # -------------------------------------------------------------
   for (j in unique(results$feature)) {
     tmp <- results[results$feature == j, grep("^contribution", names(results))]
     tmp <- colSums(abs(tmp))
     feature_importance[[j]] <- tmp
-
-    # weighted_mean <- weighted.mean(tmp, w)
-    # weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
-    # weighted_sd   <- sqrt(weighted_var)
-    #
-    # # update the summaryShaps data frame
-    # summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
-    # summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
-    # summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
+# weighted_mean <- weighted.mean(tmp, w)
+# weighted_var  <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+# weighted_sd   <- sqrt(weighted_var)
+#
+# # update the summaryShaps data frame
+# summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
+# summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
+# summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
   }
 
   # Compute row means of SHAP contributions for each subject
@@ -423,7 +477,9 @@ shapley <- function(models,
               feature_importance = feature_importance,
               weights = w,
               results = results,
-              shap_contributions_by_ids = results)
+              shap_contributions_by_ids = results,
+              ignored_models = ignored_models,
+              included_models= included_models)
 
   class(obj) <- c("shapley", "list")
 
