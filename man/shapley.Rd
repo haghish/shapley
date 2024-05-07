@@ -12,6 +12,7 @@ shapley(
   n = NULL,
   plot = TRUE,
   performance_metric = "r2",
+  standardize_performance_metric = FALSE,
   performance_type = "xval",
   minimum_performance = 0,
   method = c("lowerCI"),
@@ -39,6 +40,12 @@ For binary classification, other options include
 "aucpr" (area under the precision-recall curve),
 "auc" (area under the ROC curve),
 and "f2" (F2 score).}
+
+\item{standardize_performance_metric}{logical. if TRUE, performance_metric, which is
+used as weights vector is standardized such
+that the sum of the weights vector would be equal
+to the length of the vector. the default value
+is FALSE.}
 
 \item{performance_type}{character, specifying where the performance metric should
 be retrieved from. "train" means the performance of the
