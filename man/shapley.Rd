@@ -9,8 +9,11 @@
 shapley(
   models,
   newdata,
+  n = NULL,
   plot = TRUE,
-  performance_metric = c("r2"),
+  performance_metric = "r2",
+  performance_type = "xval",
+  minimum_performance = 0,
   method = c("lowerCI"),
   cutoff = 0,
   top_n_features = NULL
@@ -36,6 +39,19 @@ For binary classification, other options include
 "aucpr" (area under the precision-recall curve),
 "auc" (area under the ROC curve),
 and "f2" (F2 score).}
+
+\item{performance_type}{character, specifying where the performance metric should
+be retrieved from. "train" means the performance of the
+training process should be reported, "valid" indicates that
+the performance of the validation process should be reported,
+and "xval" means the cross-validation performance to be
+retrieved.}
+
+\item{minimum_performance}{the minimum performance metric for a recognizable model.
+any model with performance equal or lower than this
+argument will have weight of zero in computing the
+weighted mean and CI SHAP values. the default value is
+zero.}
 
 \item{method}{character, specifying the method used for identifying the most
 important features according to their weighted SHAP values.
