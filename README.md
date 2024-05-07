@@ -177,6 +177,6 @@ The package is compatible with machine learning grids or stacked ensemble models
 
 ## About the author
 
-The methodology implemented in this software as well as the software itself was developed by [E.F. Haghish](https://github.com/haghish/), who is a researcher at Department of Psychology, University of Oslo, researching applications of machine learning for mental health research. 
+The methodology implemented in this software as well as the software itself was developed by [E.F. Haghish](https://github.com/haghish/), who is a researcher at Department of Psychology, University of Oslo, researching applications of machine learning for mental health. 
 
 > __Twitter: [@haghish](https://twitter.com/Haghish)__
