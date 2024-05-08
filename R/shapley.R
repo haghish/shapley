@@ -170,7 +170,7 @@ shapley <- function(models,
                     cutoff = 0.0,
                     top_n_features = NULL
                     #normalize_to = "upperCI"
-                    ) {
+) {
 
   # Variables definitions
   # ============================================================
@@ -304,6 +304,10 @@ shapley <- function(models,
 
     setTxtProgressBar(pb, z)
   }
+
+  # number of included_models must be higher than 1
+
+  if (length(included_models) < 2) stop("number of models that have met the minimum_performance criteria is too low")
 
   # Check that the sum of weights are larger than 1 to avoid negative variance computation
   # ============================================================
