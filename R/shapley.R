@@ -160,7 +160,7 @@
 
 shapley <- function(models,
                     newdata,
-                    n = NULL,
+                    #nboot = NULL,
                     plot = TRUE,
                     performance_metric = "r2",
                     standardize_performance_metric = FALSE,

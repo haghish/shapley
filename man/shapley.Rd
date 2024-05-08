@@ -9,7 +9,6 @@
 shapley(
   models,
   newdata,
-  n = NULL,
   plot = TRUE,
   performance_metric = "r2",
   standardize_performance_metric = FALSE,
