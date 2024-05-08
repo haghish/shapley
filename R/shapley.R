@@ -374,10 +374,8 @@ shapley <- function(models,
     tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF))]
     weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
     weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
-XX<<-    weighted_var
-print(weighted_var)
     weighted_sd   <- sqrt(weighted_var)
-print(weighted_sd)
+
     # update the summaryShaps data frame
     summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
     summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
