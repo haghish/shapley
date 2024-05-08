@@ -342,8 +342,6 @@ shapley <- function(models,
   TOTAL <- colSums(abs(results[, grep("^contribution", names(results))]),
                    na.rm = TRUE)
 
-#globalVariables(c("feature", "mean", "sd", "ci", "normalized_mean", "normalized_ci"))
-
   # Calculate the ratio of contribution of each feature per model
   # -------------------------------------------------------------
   for (j in UNQ) {
