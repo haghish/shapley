@@ -325,10 +325,8 @@ shapley <- function(models,
   # ============================================================
   results[is.na(results)] <- 0
 
-  #data <<- cbind(data, results[, -1])
-
   # STEP 2: Calculate the summary shap values for each feature and store the mean
-  #         shap values in a list, for significance testing
+  #         SHAP values in a list, for significance testing
   # ============================================================
   ratioDF <- NULL
   UNQ     <- unique(results$feature)
