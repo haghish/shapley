@@ -4,7 +4,8 @@
 - - -
 
 
-<a href="https://github.com/haghish/shapley"><img src='man/figures/logo.png' align="right" height="200" /></a>
+<a href="https://github.com/haghish/shapley"><img src='man/figures/shapley.png' align="right" height="200" /></a>
+<br><br>
   
   __`shapley`__ : Weighted Mean SHAP for Feature Importance Assessment and Selection in Machine Learning Grid and Ensemble
 ================================================================================
