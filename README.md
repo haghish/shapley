@@ -10,7 +10,7 @@
   __`shapley`__ : Weighted Mean SHAP for Feature Importance Assessment and Selection in Machine Learning Grid and Ensemble
 ================================================================================
 
-[![CRAN version](http://www.r-pkg.org/badges/version/shapley?color=f29e02)](https://cran.r-project.org/package=shapley)   [![](https://cranlogs.r-pkg.org/badges/grand-total/shapley?color=f2c602)](https://cran.r-project.org/package=shapley) [![](man/figures/manual.svg)](https://CRAN.R-project.org/package=shapley)
+[![CRAN version](http://www.r-pkg.org/badges/version/shapley?color=02C6F2)](https://cran.r-project.org/package=shapley)   [![](https://cranlogs.r-pkg.org/badges/grand-total/shapley?color=02F2C6)](https://cran.r-project.org/package=shapley) [![](man/figures/manual.svg)](https://CRAN.R-project.org/package=shapley)
 
 ## Introduction
 
