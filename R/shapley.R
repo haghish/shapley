@@ -65,6 +65,10 @@
 #'                       is also a way to reduce computation time, if many features
 #'                       are present in the data set. The default is NULL, which means
 #'                       the shap values will be computed for all features.
+#' @param n_models minimum number of models that should meet the 'minimum_performance'
+#'                 criterion in order to compute WMSHAP and CI. If the intention
+#'                 is to compute global summary SHAP values (at feature level) for
+#'                 a single model, set n_models to 1. The default is 10.
 #' @param plot logical. if TRUE, the weighted mean and confidence intervals of
 #'             the SHAP values are plotted. The default is TRUE.
 # @param normalize_to character. The default value is "upperCI", which sets the feature with
@@ -168,7 +172,8 @@ shapley <- function(models,
                     minimum_performance = 0,
                     method = c("lowerCI"),
                     cutoff = 0.0,
-                    top_n_features = NULL
+                    top_n_features = NULL,
+                    n_models = 10
                     #normalize_to = "upperCI"
 ) {
 
@@ -307,7 +312,7 @@ shapley <- function(models,
 
   # number of included_models must be higher than 1
 
-  if (length(included_models) < 2) stop("number of models that have met the minimum_performance criteria is too low")
+  if (length(included_models) < n_models) stop("number of models that have met the minimum_performance criteria is too low")
 
   # Check that the sum of weights are larger than 1 to avoid negative variance computation
   # ============================================================
@@ -342,15 +347,16 @@ shapley <- function(models,
     lowerCI = NA,
     upperCI = NA)
 
-  # CALCULATE THE TOTAL CONTRIBUTION PER MODEL
-  TOTAL <- colSums(abs(results[, grep("^contribution", names(results))]),
+
+  # CALCULATE THE TOTAL CONTRIBUTION PER MODEL (don't collapse to vector)
+  TOTAL <- colSums(abs(results[, grep("^contribution", names(results)), FALSE]),
                    na.rm = TRUE)
 
   # Calculate the ratio of contribution of each feature per model
   # -------------------------------------------------------------
   for (j in UNQ) {
     # get all contribution columns for the j feature
-    tmp <- results[results$feature == j, grep("^contribution", names(results))]
+    tmp <- results[results$feature == j, grep("^contribution", names(results)), FALSE]
     # compute the ratio of absolute shap values for features of all models
     mat <- matrix(colSums(abs(tmp), na.rm = TRUE) / TOTAL, nrow = 1)
     # create a matrix
@@ -371,7 +377,7 @@ shapley <- function(models,
   # -------------------------------------------------------------
   for (j in UNQ) {
     # get all contribution columns for the j feature
-    tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF))]
+    tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF)), FALSE]
     weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
     weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
     weighted_sd   <- sqrt(weighted_var)
@@ -390,7 +396,7 @@ shapley <- function(models,
   # compute feature_importance used by shapley.test function
   # -------------------------------------------------------------
   for (j in unique(results$feature)) {
-    tmp <- results[results$feature == j, grep("^contribution", names(results))]
+    tmp <- results[results$feature == j, grep("^contribution", names(results)), FALSE]
     tmp <- colSums(abs(tmp))
     feature_importance[[j]] <- tmp
   }
