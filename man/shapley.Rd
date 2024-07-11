@@ -16,7 +16,8 @@ shapley(
   minimum_performance = 0,
   method = c("lowerCI"),
   cutoff = 0,
-  top_n_features = NULL
+  top_n_features = NULL,
+  n_models = 10
 )
 }
 \arguments{
@@ -84,6 +85,11 @@ the 'cutoff' and 'method' arguments. specifying top_n_feature
 is also a way to reduce computation time, if many features
 are present in the data set. The default is NULL, which means
 the shap values will be computed for all features.}
+
+\item{n_models}{minimum number of models that should meet the 'minimum_performance'
+criterion in order to compute WMSHAP and CI. If the intention
+is to compute global summary SHAP values (at feature level) for
+a single model, set n_models to 1. The default is 10.}
 }
 \value{
 a list including the GGPLOT2 object, the data frame of SHAP values,
