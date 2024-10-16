@@ -1,5 +1,6 @@
-#' @title Plot weighted SHAP contributions
-#' @description This function applies different criteria to visualize SHAP contributions
+#' @title Plot weighted SHAP contributions at subject (row), feature (column), or domain (groups of features) levels
+#' @description This function applies different criteria to visualize SHAP contributions at
+#'              different levels.
 #' @param shapley object of class 'shapley', as returned by the 'shapley' function
 #' @param plot character, specifying the type of the plot, which can be either
 #'            'bar', 'waffle', or 'shap'. The default is 'bar'.
@@ -391,14 +392,12 @@ shapley.plot <- function(shapley,
   return(Plot)
 }
 
-# print(shapley.plot(shapley = shapley, plot = "waffle", method = "mean",
+# print(shapley.plot(shapley = shapley, plot = "bar", method = "mean",
 #                    domains = list(Demographic = c("RACE", "AGE"),
 #                                   Cancer = c("VOL", "PSA", "GLEASON"),
 #                                   Tests = c("DPROS", "DCAPS")),
 #                    print = TRUE
 # ))
-
-
 
 # print(shapley.plot(shapley, plot = "waffle", method = "shapratio", print = F,
 #                    cutoff = 0.005
