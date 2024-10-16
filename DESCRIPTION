@@ -1,11 +1,11 @@
 Package: shapley
 Type: Package
 Title: Weighted Mean SHAP for Feature Selection in ML Grid and Ensemble
-Version: 0.3
+Version: 0.4
 Authors@R: 
     person("E. F. Haghish",
            role = c("aut", "cre", "cph"),
-           email = "haghish@uio.no")
+           email = "haghish@hotmail.com")
 Depends: 
     R (>= 3.5.0)
 Description: This R package introduces Weighted Mean SHapley Additive exPlanations (WMSHAP),
