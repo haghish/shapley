@@ -285,7 +285,8 @@ shapley <- function(models,
         BASE <- m
         data <- m$data
         data <- data[order(data$Row.names), ]
-        results <- data[, c("Row.names", "feature", "contribution")]
+        results <- data[, c("id.x", "Row.names", "feature", "contribution")]
+        names(results)[1] <- "index"
       }
       else if (length(included_models) > 1) {
         holder <- m$data[, c("Row.names", "feature", "contribution")]
