@@ -35,40 +35,46 @@ shapley.feature.selection <- function(shapley,
                                       top_n_features=NULL,
                                       features = NULL) {
 
+  # variables
+  # ============================================================
+  DATA <- shapley$contributionPlot$data
+  if (is.null(features)) features <- as.character(shapley$summaryShaps$feature)
+
   # Select the features that meet the criteria
   # ============================================================
-  if (!is.null(top_n_features)) {
-    shapley$summaryShaps <- shapley$summaryShaps[order(
-      shapley$summaryShaps$mean, decreasing = TRUE), ]
-    shapley$summaryShaps <- shapley$summaryShaps[1:top_n_features, ]
+  if (length(shapley[["ids"]]) >= 1) {
+    if (!is.null(top_n_features)) {
+      shapley$summaryShaps <- shapley$summaryShaps[order(
+        shapley$summaryShaps$mean, decreasing = TRUE), ]
+      shapley$summaryShaps <- shapley$summaryShaps[1:top_n_features, ]
 
-    shapley$contributionPlot$data <- shapley$contributionPlot$data[
-      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
+      shapley$contributionPlot$data <- DATA[
+        DATA$feature %in% features, ]
+    }
+    else if (method == "mean") {
+      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
+      shapley$contributionPlot$data <- DATA[DATA$feature %in% features, ]
+
+    } else if (method == "shapratio") {
+      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
+      shapley$contributionPlot$data <- DATA[DATA$feature %in% features, ]
+
+    } else if (method == "lowerCI") {
+      if (length(shapley[["ids"]]) == 1) stop("shapley object includes a single model and lowerCI cannot be used")
+      shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
+      shapley$contributionPlot$data <- DATA[DATA$feature %in% features, ]
+
+    } else {
+      stop("method must be one of 'mean', 'shapratio', or 'ci'")
+    }
   }
-  else if (method == "mean") {
-    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
-    shapley$contributionPlot$data <- shapley$contributionPlot[
-      shapley$contributionPlot$feature %in% shapley$summaryShaps$feature, ]
-  } else if (method == "shapratio") {
-    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$shapratio > cutoff, ]
-    shapley$contributionPlot$data <- shapley$contributionPlot$data[
-      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
-  } else if (method == "lowerCI") {
-    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
-    shapley$contributionPlot$data <- shapley$contributionPlot$data[
-      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
-  } else if (!is.null(features)) {
-    shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$feature %in% features, ]
-    shapley$contributionPlot$data <- shapley$contributionPlot$data[
-      shapley$contributionPlot$data$feature %in% shapley$summaryShaps$feature, ]
-  } else {
-    stop("method must be one of 'mean', 'shapratio', or 'ci'")
-  }
+  else (stop("at least 1 model must be included in the shapley object"))
+
 
   # Sort the features based on their mean SHAP values
   # ============================================================
   index <- order(- shapley$summaryShaps$mean)
-  features <- shapley$summaryShaps$feature[index]
+  features <- features[index]
   mean <- shapley$summaryShaps$mean[index]
   shapratio <- shapley$summaryShaps$shapratio[index]
 
@@ -78,3 +84,5 @@ shapley.feature.selection <- function(shapley,
               shapratio = shapratio))
 
 }
+
+
