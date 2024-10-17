@@ -102,7 +102,7 @@ shapley.plot(result, plot = "waffle")
 
 <img src='man/figures/waffle.png' align="center" height="400" />
 
-### SHAP contribution plot of important features based on weighted mean SHAP values
+### Mean SHAP contribution plot of important features based on weighted mean SHAP values
 
 Another type of plot is __`shap`__ plot, which shows the SHAP contributions of each feature for each observation (subject, or row in the data). This plot is useful for identifying the direction of the effect of each feature on the outcome, improving the transparency of the model. What is noteworthy about the __`shap`__ plot is that it visualizes the weighted mean SHAP contributions across all models, while taking the performance of the models into account. Therefore, this plot is expected to provide more stable SHAP explanations that how different values of a feature affect the outcome. 
 
