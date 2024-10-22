@@ -20,13 +20,6 @@
 #'               contribution of each feature's weighted SHAP value against the
 #'               aggregate of all features, with those surpassing the 'cutoff'
 #'               being selected as top feature.
-#' @param cutoff numeric, specifying the cutoff for the method used for selecting
-#'               the top features. the cutoff value changes the features selection
-#'               for all figures.
-#' @param top_n_features integer. if specified, the top n features with the
-#'                       highest weighted SHAP values will be selected, overrullung
-#'                       the 'cutoff' and 'method' arguments.
-#' @param features character vector, specifying the feature to be plotted.
 #' @param domains character list, specifying the domains for grouping the features'
 #'                contributions. Domains are clusters of features' names, that
 #'                can be used to compute WMSHAP at higher level, along with
@@ -41,6 +34,7 @@
 #' @param scale_colour_gradient character vector for specifying the color gradients
 #'                              for the plot.
 #' @param print logical. if TRUE, the WMSHAP summary table for the given row is printed
+#' @importFrom stats na.omit aggregate formula
 #' @importFrom waffle waffle
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
@@ -94,8 +88,8 @@
 #' }
 #' @export
 
-
-shapley.domain <- function(shapley, domains,
+shapley.domain <- function(shapley,
+                           domains,
                            plot = "bar",
                            method = "AUTO",
                            legendstyle = "continuous",
