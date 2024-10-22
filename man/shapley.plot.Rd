@@ -7,14 +7,12 @@
 shapley.plot(
   shapley,
   plot = "bar",
-  method = "AUTO",
-  cutoff = 0.005,
+  method = "lowerCI",
+  cutoff = 0,
   top_n_features = NULL,
   features = NULL,
-  domains = NULL,
   legendstyle = "continuous",
-  scale_colour_gradient = NULL,
-  print = FALSE
+  scale_colour_gradient = NULL
 )
 }
 \arguments{
@@ -25,12 +23,9 @@ shapley.plot(
 
 \item{method}{character, specifying the method used for identifying the most
 important features according to their weighted SHAP values.
-The default selection method is "AUTO", which selects a method
-based on number of models that have been evaluated because
-lowerCI method is not applicable to SHAP values of a single
-model. If 'lowerCI' is specified,
+The default selection method is "lowerCI", which includes
 features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value would be reported.
+predefined 'cutoff' value (default is relative SHAP of 1%).
 Alternatively, the "mean" option can be specified, indicating
 any feature with normalized weighted mean SHAP contribution above
 the specified 'cutoff' should be selected. Another
@@ -42,22 +37,13 @@ aggregate of all features, with those surpassing the 'cutoff'
 being selected as top feature.}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features. the cutoff value changes the features selection
-for all figures.}
+the top features.}
 
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
 
 \item{features}{character vector, specifying the feature to be plotted.}
-
-\item{domains}{character list, specifying the domains for grouping the features'
-contributions. Domains are clusters of features' names, that
-can be used to compute WMSHAP at higher level, along with
-their 95% confidence interval. This computation can be used to
-better understand how a cluster of features influence the
-outcome. Note that either of 'features' or 'domains' arguments
-can be specified at the time.}
 
 \item{legendstyle}{character, specifying the style of the plot legend, which
 can be either 'continuous' (default) or 'discrete'. the
@@ -66,8 +52,6 @@ other plots only use 'discrete' legend.}
 
 \item{scale_colour_gradient}{character vector for specifying the color gradients
 for the plot.}
-
-\item{print}{logical. if TRUE, the WMSHAP summary table for the given row is printed}
 }
 \value{
 ggplot object
