@@ -70,7 +70,6 @@ shapley.feature.selection <- function(shapley,
   }
   else (stop("at least 1 model must be included in the shapley object"))
 
-
   # Sort the features based on their mean SHAP values
   # ============================================================
   index <- order(- shapley$summaryShaps$mean)
