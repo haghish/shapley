@@ -139,7 +139,7 @@ print(shapley.plot(shapley = result,
 The analysis results are also returned in a Table:
 
 ```
-      feature       mean         sd          ci    lowerCI   upperCI
+      domain        mean         sd          ci    lowerCI   upperCI
 1 Demographic 0.09730516 0.01304978 0.004669805 0.09263535 0.1019750
 2      Cancer 0.70783878 0.01747264 0.006252502 0.70158628 0.7140913
 3       Tests 0.19485606 0.01269251 0.004541957 0.19031411 0.1993980
