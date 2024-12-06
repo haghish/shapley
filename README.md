@@ -125,7 +125,7 @@ shapley.plot(result, plot="shap")
 Weighted mean SHAP values and their confidence intervals can also be computed for __Factors__ (A group of items) or __Domains__ (A group of correlated or related factors presenting a domain). For both, the `domain` argument should be specified so that the software compute the contribution of a cluster of items. There is no difference between _Factors_ and _Domains_, because for either, they need to be defined as a group of features (variables / columns) in the dataset. 
 
 ```r
-print(shapley.plot(shapley = result,
+print(shapley.domain(shapley = result,
                    plot = "bar", method = "mean",
                    domains = list(Demographic = c("RACE", "AGE"),
                                   Cancer = c("VOL", "PSA", "GLEASON"),
