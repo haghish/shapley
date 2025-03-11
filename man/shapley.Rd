@@ -14,10 +14,11 @@ shapley(
   standardize_performance_metric = FALSE,
   performance_type = "xval",
   minimum_performance = 0,
-  method = c("lowerCI"),
-  cutoff = 0,
+  method = c("shapratio"),
+  cutoff = 0.01,
   top_n_features = NULL,
-  n_models = 10
+  n_models = 10,
+  sample_size = nrow(newdata)
 )
 }
 \arguments{
@@ -62,22 +63,21 @@ zero.}
 
 \item{method}{character, specifying the method used for identifying the most
 important features according to their weighted SHAP values.
-The default selection method is "lowerCI", which includes
-features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is 0).
-Alternatively, the "mean" option can be specified, indicating
-any feature with normalized weighted mean SHAP contribution above
-the specified 'cutoff' should be selected. Another
-alternative options is "shapratio", a method that filters
+The default selection method is "shapratio", a method that filters
 for features where the proportion of their relative weighted SHAP
 value exceeds the 'cutoff'. This approach calculates the relative
 contribution of each feature's weighted SHAP value against the
 aggregate of all features, with those surpassing the 'cutoff'
-being selected as top feature.}
+being selected as top feature.
+Alternatively, the "mean" option can be specified, indicating
+any feature with normalized weighted mean SHAP contribution above
+the specified 'cutoff' should be selected. Another
+alternative options is "lowerCI", which includes
+features whose lower weighted confidence interval exceeds the
+predefined 'cutoff' value (default is relative SHAP of 1%).}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features. the default is zero, which means that all
-features with the "method" criteria above zero will be selected.}
+the top features.}
 
 \item{top_n_features}{integer. if specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
@@ -90,6 +90,13 @@ the shap values will be computed for all features.}
 criterion in order to compute WMSHAP and CI. If the intention
 is to compute global summary SHAP values (at feature level) for
 a single model, set n_models to 1. The default is 10.}
+
+\item{sample_size}{integer. number of rows in the \code{newdata} that should
+be used for SHAP assessment. By default, all rows are used,
+which is the recommended procedure for scientific analyses.
+However, SHAP analysis is time consuming and in the process
+of code development, lower values can be used for quicker
+shapley analyses.}
 }
 \value{
 a list including the GGPLOT2 object, the data frame of SHAP values,
