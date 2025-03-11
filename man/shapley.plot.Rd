@@ -7,8 +7,8 @@
 shapley.plot(
   shapley,
   plot = "bar",
-  method = "lowerCI",
-  cutoff = 0,
+  method = "shapratio",
+  cutoff = 0.01,
   top_n_features = NULL,
   features = NULL,
   legendstyle = "continuous",
@@ -23,18 +23,18 @@ shapley.plot(
 
 \item{method}{character, specifying the method used for identifying the most
 important features according to their weighted SHAP values.
-The default selection method is "lowerCI", which includes
-features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1%).
-Alternatively, the "mean" option can be specified, indicating
-any feature with normalized weighted mean SHAP contribution above
-the specified 'cutoff' should be selected. Another
-alternative options is "shapratio", a method that filters
+The default selection method is "shapratio", a method that filters
 for features where the proportion of their relative weighted SHAP
 value exceeds the 'cutoff'. This approach calculates the relative
 contribution of each feature's weighted SHAP value against the
 aggregate of all features, with those surpassing the 'cutoff'
-being selected as top feature.}
+being selected as top feature.
+Alternatively, the "mean" option can be specified, indicating
+any feature with normalized weighted mean SHAP contribution above
+the specified 'cutoff' should be selected. Another
+alternative options is "lowerCI", which includes
+features whose lower weighted confidence interval exceeds the
+predefined 'cutoff' value (default is relative SHAP of 1%).}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
 the top features.}
