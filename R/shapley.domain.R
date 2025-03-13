@@ -93,7 +93,8 @@ shapley.domain <- function(shapley,
                            plot = "bar",
                            method = "AUTO",
                            legendstyle = "continuous",
-                           scale_colour_gradient = NULL,
+                           scale_colour_gradient = NULL, #this is a BUG because it is not implemented
+                           # COLORCODE IS MISSING :(
                            print = FALSE) {
 
   # Variable definitions
@@ -102,9 +103,9 @@ shapley.domain <- function(shapley,
   FILLCOLOR <- NULL
   mean      <- NA
   shapratio <- NA
-  COLORCODE <- c("#07B86B", "#07a9b8","#b86207","#b8b207", "#b80786",
-                 "#073fb8", "#b8073c", "#8007b8", "#bdbdbd", "#4eb807")
-
+  # COLORCODE <- c("#07B86B", "#07a9b8","#b86207","#b8b207", "#b80786",
+  #                "#073fb8", "#b8073c", "#8007b8", "#bdbdbd", "#4eb807")
+  COLORCODE <- c("#855C75FF", "#D9AF6BFF", "#AF6458FF","#736F4CFF","#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF", "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF")
   # Feature selection
   # ============================================================
   if (length(shapley[["ids"]]) < 1) stop("no model ID was found")
@@ -156,7 +157,7 @@ shapley.domain <- function(shapley,
 
     # aggregate
     aggregate_contribution <- function(df, column) {
-      aggregate(formula(paste(column, "~ domain + index")), data = results, sum)
+      aggregate(formula(paste(column, "~ domain + index")), data = df, sum)
     }
 
     # aggregate domain data at row level
