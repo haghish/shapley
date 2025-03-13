@@ -36,6 +36,11 @@ In particular, the `shapley` software addresses the following shortcomings, ofte
 
 The `shapley` R package computes the weighted average and confidence intervals of Shapley values from multiple machine learning models. By incorporating model performance metrics as weights, it addresses the variability in SHAP values across different models, which is often overlooked when relying on a single "best" model. This approach is particularly valuable in situations where defining the best model is challenging, such as with severe class imbalances (class rarity, caused by low-prevalence outcome). The package also facilitates more reliable computation of SHAP contributions across models and provides a basis for significance testing between features to ensure differences are not due to random chance. Furthermore, the package proposes several automated and transparent methods for identifying important features. These methods use various metrics to define importance, allowing for the selection of significant features based on SHAP contributions without pre-specifying number of top features (see below for details).
 
+> The shapley algorithm computes weighted mean SHAP values and their 95% confidence intervals for a set of homogeneous or heterogeneous machine learning models. The algorithm also computes mean and 95% confidence interval bootstrap SHAP values for a single model. Local SHAP values are at subject level (n) and global SHAP contributions are at feature level (p).
+<img src='man/figures/shapley_algorithm.png' align="center" height="500" />
+
+
+
 ## Examples
 
 To demonstrate how __`shapley`__ can compute SHAP values across a machine learning grid, let's carry out a grid search to fine-tune Gradient Boosting Machines (GBM) algorithm for a binary classification. Next, I will use the grid to compute SHAP contributions across all models and report their weighted mean and weighted 95% confidence intervals. 
