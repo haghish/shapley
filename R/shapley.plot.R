@@ -97,11 +97,11 @@ shapley.plot <- function(shapley,
 
   # Feature selection
   # ============================================================
-  select <- shapley.feature.selection(shapley = shapley,
-                                      method = method,
-                                      cutoff = cutoff,
-                                      top_n_features = top_n_features,
-                                      features = features)
+  select <- feature.selection(shapley = shapley,
+                              method = method,
+                              cutoff = cutoff,
+                              top_n_features = top_n_features,
+                              features = features)
 
   shapley   <- select$shapley                    # update the data for different plots
   features  <- select$features
