@@ -98,7 +98,6 @@
 #' @importFrom curl curl
 #' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
 #'             ylab theme_classic theme scale_y_continuous margin expansion
-#' @author E. F. Haghish
 #' @return a list including the GGPLOT2 object, the data frame of SHAP values,
 #'         and performance metric of all models, as well as the model IDs.
 #' @examples
@@ -169,6 +168,7 @@
 #'
 #' }
 #' @export
+#' @author E. F. Haghish
 
 shapley <- function(models,
                     newdata,
