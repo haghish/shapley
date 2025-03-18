@@ -16,7 +16,7 @@
 #'               the specified 'cutoff' should be selected. Another
 #'               alternative options is "lowerCI", which includes
 #'               features whose lower weighted confidence interval exceeds the
-#'               predefined 'cutoff' value (default is relative SHAP of 1%).
+#'               predefined 'cutoff' value (default is relative SHAP of 1\%).
 #' @param cutoff numeric, specifying the cutoff for the method used for selecting
 #'               the top features.
 #' @param top_n_features integer. if specified, the top n features with the
