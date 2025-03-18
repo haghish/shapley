@@ -3,7 +3,6 @@
 export(h2o.get_ids)
 export(shapley)
 export(shapley.domain)
-export(shapley.feature.selection)
 export(shapley.feature.test)
 export(shapley.plot)
 export(shapley.row.plot)
