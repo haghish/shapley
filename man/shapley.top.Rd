@@ -75,6 +75,7 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 ### Significance testing of contributions of two features
 #######################################################
 
+
 shapley.top(result, mean = 0.005, lowerCI = 0.01)
 }
 }
