@@ -37,7 +37,7 @@ In particular, the `shapley` software addresses the following shortcomings, ofte
 The `shapley` R package computes the weighted average and confidence intervals of Shapley values from multiple machine learning models. By incorporating model performance metrics as weights, it addresses the variability in SHAP values across different models, which is often overlooked when relying on a single "best" model. This approach is particularly valuable in situations where defining the best model is challenging, such as with severe class imbalances (class rarity, caused by low-prevalence outcome). The package also facilitates more reliable computation of SHAP contributions across models and provides a basis for significance testing between features to ensure differences are not due to random chance. Furthermore, the package proposes several automated and transparent methods for identifying important features. These methods use various metrics to define importance, allowing for the selection of significant features based on SHAP contributions without pre-specifying number of top features (see below for details).
 
 > The shapley algorithm computes weighted mean SHAP values and their 95% confidence intervals for a set of homogeneous or heterogeneous machine learning models. The algorithm also computes mean and 95% confidence interval bootstrap SHAP values for a single model. Local SHAP values are at subject level (n) and global SHAP contributions are at feature level (p).
-<img src='man/figures/shapley_algorithm.png' align="center" height="500" />
+<img src='man/figures/shapley_algorithm.jpg' align="center" height="500" />
 
 
 
@@ -105,7 +105,7 @@ __`waffle`__ plot, by default showing any feature that at least has contributed
 shapley.plot(result, plot = "waffle")
 ```
 
-<img src='man/figures/waffle.png' align="center" height="400" />
+<img src='man/figures/waffle.jpg' align="center" height="400" />
 
 ### Mean SHAP contribution plot of important features based on weighted mean SHAP values
 
@@ -118,12 +118,12 @@ shapley.plot(result, plot="shap")
 > Note: the weighted mean SHAP contribution plot of observations is expected to more clearly differentiate between how different values of a feature affect the outcome. 
 
 * Weighted mean SHAP contributions of all models from the tuning grid
-<img src='man/figures/shap.png' align="center" height="400" />
+<img src='man/figures/shap.jpg' align="center" height="400" />
 
 > For instance, in the plot above, the effect of "GLEASON" feature on the outcome is more clearly differentiated between different values of the feature, compared to the plot of SHAP contributions of a _the best_ model, as shown below. As you see, subjects with very high SHAP values that are shown in the _best model_ below are not present in the plot of weighted mean SHAP contributions, meaning that different models did not agree on the effect of "GLEASON" feature on the outcome and thus, the voice of different models is taken into account, weighted by their performance metric. It is also evident that the SHAP contributions of the weighted mean SHAP model are more clearly demonstrate the relationship of the feature on the outcome. See for example, the 'DPROS' feature, where the SHAP values are somehow well-clustered in the weighted mean SHAP plot, indicating that collectively, the models clearly see a pattern between increased intensity of 'DPROS' with the outcome. 
 
 * SHAP contributions of the best model
-<img src='man/figures/best.png' align="center" height="400" />
+<img src='man/figures/best.jpg' align="center" height="400" />
 
 ## Domain level
 
