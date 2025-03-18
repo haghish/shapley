@@ -3,23 +3,6 @@
 #' @param shapley object of class 'shapley', as returned by the 'shapley' function
 #' @param plot character, specifying the type of the plot, which can be either
 #'            'bar', 'waffle', or 'shap'. The default is 'bar'.
-#' @param method character, specifying the method used for identifying the most
-#'               important features according to their weighted SHAP values.
-#'               The default selection method is "AUTO", which selects a method
-#'               based on number of models that have been evaluated because
-#'               lowerCI method is not applicable to SHAP values of a single
-#'               model. If 'lowerCI' is specified,
-#'               features whose lower weighted confidence interval exceeds the
-#'               predefined 'cutoff' value would be reported.
-#'               Alternatively, the "mean" option can be specified, indicating
-#'               any feature with normalized weighted mean SHAP contribution above
-#'               the specified 'cutoff' should be selected. Another
-#'               alternative options is "shapratio", a method that filters
-#'               for features where the proportion of their relative weighted SHAP
-#'               value exceeds the 'cutoff'. This approach calculates the relative
-#'               contribution of each feature's weighted SHAP value against the
-#'               aggregate of all features, with those surpassing the 'cutoff'
-#'               being selected as top feature.
 #' @param domains character list, specifying the domains for grouping the features'
 #'                contributions. Domains are clusters of features' names, that
 #'                can be used to compute WMSHAP at higher level, along with
@@ -91,7 +74,6 @@
 shapley.domain <- function(shapley,
                            domains,
                            plot = "bar",
-                           method = "AUTO",
                            legendstyle = "continuous",
                            scale_colour_gradient = NULL, #this is a BUG because it is not implemented
                            # COLORCODE IS MISSING :(
@@ -102,7 +84,7 @@ shapley.domain <- function(shapley,
   DOMAINS <- names(domains)
   FILLCOLOR <- NULL
   mean      <- NA
-  shapratio <- NA
+
   # COLORCODE <- c("#07B86B", "#07a9b8","#b86207","#b8b207", "#b80786",
   #                "#073fb8", "#b8073c", "#8007b8", "#bdbdbd", "#4eb807")
   COLORCODE <- c("#855C75FF", "#D9AF6BFF", "#AF6458FF","#736F4CFF","#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF", "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF")
@@ -290,7 +272,7 @@ shapley.domain <- function(shapley,
   return(Plot)
 }
 
-# print(shapley.domain(shapley = shapley, plot = "bar", method = "mean",
+# print(shapley.domain(shapley = shapley, plot = "bar",
 #                    domains = list(Demographic = c("RACE", "AGE"),
 #                                   Cancer = c("VOL", "PSA", "GLEASON"),
 #                                   Tests = c("DPROS", "DCAPS")),
