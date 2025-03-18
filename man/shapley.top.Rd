@@ -4,18 +4,22 @@
 \alias{shapley.top}
 \title{Select top features in a model}
 \usage{
-shapley.top(shapley, lowerci = 0.01, shapratio = 0.005)
+shapley.top(shapley, mean = 0.01, lowerCI = 0.01)
 }
 \arguments{
 \item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
 
-\item{lowerci}{numeric, specifying the lower limit of weighted confidence intervals
-of SHAP values relative to the feature with highest SHAP value.
-the default is 0.01}
+\item{mean}{Numeric. specifying the cutoff of weighted mean
+SHAP ratio (WMSHAP). The default is 0.01. Lower values will
+be more generous in defining "importance", while higher values
+are more restrictive. However, these default values are not
+generalizable to all situations and algorithms.}
 
-\item{shapratio}{numeric, specifying the lower limit of percentage of weighted mean
-SHAP values relative to over all SHAP values of all features.
-the default is 0.005}
+\item{lowerCI}{numeric. Specifying the limit of lower bound of 95\% WMSHAP
+The default is 0.01. Lower values will
+be more generous in defining "importance", while higher values
+are more restrictive. However, these default values are not
+generalizable to all situations and algorithms.}
 }
 \value{
 data.frame of selected features
@@ -71,7 +75,7 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 ### Significance testing of contributions of two features
 #######################################################
 
-shapley.top(result, lowerci = 0.01, shapratio = 0.005)
+shapley.top(result, mean = 0.005, lowerCI = 0.01)
 }
 }
 \author{
