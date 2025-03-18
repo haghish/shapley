@@ -34,7 +34,7 @@ any feature with normalized weighted mean SHAP contribution above
 the specified 'cutoff' should be selected. Another
 alternative options is "lowerCI", which includes
 features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1%).}
+predefined 'cutoff' value (default is relative SHAP of 1\%).}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
 the top features.}
