@@ -7,7 +7,7 @@
 shapley.plot(
   shapley,
   plot = "bar",
-  method = "shapratio",
+  method = "mean",
   cutoff = 0.01,
   top_n_features = NULL,
   features = NULL,
@@ -21,25 +21,18 @@ shapley.plot(
 \item{plot}{character, specifying the type of the plot, which can be either
 'bar', 'waffle', or 'shap'. The default is 'bar'.}
 
-\item{method}{character, specifying the method used for identifying the most
-important features according to their weighted SHAP values.
-The default selection method is "shapratio", a method that filters
-for features where the proportion of their relative weighted SHAP
-value exceeds the 'cutoff'. This approach calculates the relative
-contribution of each feature's weighted SHAP value against the
-aggregate of all features, with those surpassing the 'cutoff'
-being selected as top feature.
-Alternatively, the "mean" option can be specified, indicating
-any feature with normalized weighted mean SHAP contribution above
-the specified 'cutoff' should be selected. Another
-alternative options is "lowerCI", which includes
-features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1\%).}
+\item{method}{Character. The column name in \code{summaryShaps} used
+for feature selection. Default is \code{"mean"}, which
+selects important features which have weighted mean shap
+ratio (WMSHAP) higher than the specified cutoff. Other
+alternative is "lowerCI", which selects features which
+their lower bound of confidence interval is higher than
+the cutoff.}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
 the top features.}
 
-\item{top_n_features}{integer. if specified, the top n features with the
+\item{top_n_features}{Integer. If specified, the top n features with the
 highest weighted SHAP values will be selected, overrullung
 the 'cutoff' and 'method' arguments.}
 
