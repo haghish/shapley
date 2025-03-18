@@ -87,6 +87,15 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 
 shapley.plot(result, plot = "bar")
 shapley.plot(result, plot = "waffle")
+
+#######################################################
+### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
+#######################################################
+shapley.domain(shapley = shapley, plot = "bar",
+               domains = list(Demographic = c("RACE", "AGE"),
+                              Cancer = c("VOL", "PSA", "GLEASON"),
+                              Tests = c("DPROS", "DCAPS")),
+                              print = TRUE
 }
 }
 \author{
