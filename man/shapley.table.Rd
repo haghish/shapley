@@ -6,7 +6,7 @@
 \usage{
 shapley.table(
   wmshap,
-  method = c("shapratio"),
+  method = "mean",
   cutoff = 0.01,
   round = 3,
   exclude_features = NULL,
@@ -21,7 +21,12 @@ shapley.table(
 containing a data frame \code{summaryShaps}.}
 
 \item{method}{Character. The column name in \code{summaryShaps} used
-for feature selection. Default is \code{"shapratio"}.}
+for feature selection. Default is \code{"mean"}, which
+selects important features which have weighted mean shap
+ratio (WMSHAP) higher than the specified cutoff. Other
+alternative is "lowerCI", which selects features which
+their lower bound of confidence interval is higher than
+the cutoff.}
 
 \item{cutoff}{Numeric. The threshold cutoff for the selection method;
 only features with a value in the \code{method} column
@@ -60,7 +65,8 @@ Generates a summary table of weighted mean SHAP (WMSHAP) values
   and confidence intervals for each feature based on a weighted SHAP analysis.
   The function filters the SHAP summary table (from a \code{wmshap} object) by
   selecting features that meet or exceed a specified cutoff using a selection
-  method (default "shapratio"). It then sorts the table by the mean SHAP value,
+  method (default "mean", which is weighted mean shap ratio).
+  It then sorts the table by the mean SHAP value,
   formats the SHAP values along with their 95\% confidence intervals into a single
   string, and optionally adds human-readable feature descriptions from a provided
   dictionary. The output is returned as a markdown table using the \pkg{pander}
@@ -119,7 +125,7 @@ result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucp
 
 # get the output as a Markdown table:
 md_table <- shapley.table(wmshap = result2,
-                          method = "shapratio",
+                          method = "mean",
                           cutoff = 0.01,
                           round = 3,
                           markdown.table = TRUE)
