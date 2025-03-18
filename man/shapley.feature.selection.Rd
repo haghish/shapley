@@ -7,7 +7,7 @@
 \usage{
 shapley.feature.selection(
   shapley,
-  method = "lowerCI",
+  method = "mean",
   cutoff = 0,
   top_n_features = NULL,
   features = NULL
@@ -16,20 +16,13 @@ shapley.feature.selection(
 \arguments{
 \item{shapley}{shapley object}
 
-\item{method}{character, specifying the method used for identifying the most
-important features according to their weighted SHAP values.
-The default selection method is "lowerCI", which includes
-features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1%).
-Alternatively, the "mean" option can be specified, indicating
-any feature with normalized weighted mean SHAP contribution above
-the specified 'cutoff' should be selected. Another
-alternative options is "shapratio", a method that filters
-for features where the proportion of their relative weighted SHAP
-value exceeds the 'cutoff'. This approach calculates the relative
-contribution of each feature's weighted SHAP value against the
-aggregate of all features, with those surpassing the 'cutoff'
-being selected as top feature.}
+\item{method}{Character. The column name in \code{summaryShaps} used
+for feature selection. Default is \code{"mean"}, which
+selects important features which have weighted mean shap
+ratio (WMSHAP) higher than the specified cutoff. Other
+alternative is "lowerCI", which selects features which
+their lower bound of confidence interval is higher than
+the cutoff.}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
 the top features. the default is zero, which means that all
