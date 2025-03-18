@@ -62,6 +62,7 @@
 #' ### Significance testing of contributions of two features
 #' #######################################################
 #'
+#'
 #' shapley.top(result, mean = 0.005, lowerCI = 0.01)
 #' }
 #' @export
@@ -77,7 +78,7 @@ shapley.top <- function(shapley, mean = 0.01, lowerCI = 0.01) {
   # ============================================================
   results <- data.frame(
     feature = shapley$summaryShaps$feature,
-    mean = shapley$summaryShaps$shapratio,
+    mean = shapley$summaryShaps$mean,
     lowerCI = shapley$summaryShaps$lowerCI
   )
 
