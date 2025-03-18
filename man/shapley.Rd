@@ -2,9 +2,8 @@
 % Please edit documentation in R/shapley.R
 \name{shapley}
 \alias{shapley}
-\title{Weighted average of SHAP values and weighted SHAP confidence intervals
-       for a grid of fine-tuned models or base-learners of a stacked ensemble
-       model}
+\title{Weighted Mean SHAP Ratio and Confidence Interval for a ML Grid
+       of Fine-Tuned Models or Base-Learners of a Stacked Ensemble Model}
 \usage{
 shapley(
   models,
@@ -14,7 +13,7 @@ shapley(
   standardize_performance_metric = FALSE,
   performance_type = "xval",
   minimum_performance = 0,
-  method = c("shapratio"),
+  method = "mean",
   cutoff = 0.01,
   top_n_features = NULL,
   n_models = 10,
@@ -22,59 +21,44 @@ shapley(
 )
 }
 \arguments{
-\item{models}{H2O search grid, AutoML grid, or a character vector of H2O model IDs.
-the \code{"h2o.get_ids"} function from \code{"h2otools"} can retrieve
-the IDs from grids.}
+\item{models}{h2o search grid, autoML grid, or a character vector of H2O model IDs.}
 
-\item{newdata}{h2o frame (data.frame). the data.frame must be already uploaded
-on h2o server (cloud). when specified, this dataset will be used
-for evaluating the models. if not specified, model performance
-on the training dataset will be reported.}
+\item{newdata}{An \code{h2o} frame (or \code{data.frame}) already uploaded to the
+\code{h2o} server. This data will be used for computing SHAP
+contributions for each model, alongside model's performance
+weights.}
 
 \item{plot}{logical. if TRUE, the weighted mean and confidence intervals of
 the SHAP values are plotted. The default is TRUE.}
 
-\item{performance_metric}{character, specifying the performance metric to be
-used for weighting the SHAP values (mean and 95% CI). The default is
-"r2" (R Squared).
-For binary classification, other options include
-"aucpr" (area under the precision-recall curve),
-"auc" (area under the ROC curve),
-and "f2" (F2 score).}
+\item{performance_metric}{Character specifying which performance metric to use
+as weights. The default is \code{"r2"}, which can
+be used for both regression and classification.
+For binary classification, other options include:
+\code{"aucpr"} (area under the precision-recall curve),
+\code{"auc"} (area under the ROC curve),
+and \code{"f2"} (F2 score).}
 
-\item{standardize_performance_metric}{logical. if TRUE, performance_metric, which is
-used as weights vector is standardized such
-that the sum of the weights vector would be equal
-to the length of the vector. the default value
-is FALSE.}
+\item{standardize_performance_metric}{Logical, indicating whether to standardize
+the performance metric used as weights so
+their sum equals the number of models. The
+default is \code{FALSE}.}
 
-\item{performance_type}{character, specifying where the performance metric should
-be retrieved from. "train" means the performance of the
-training process should be reported, "valid" indicates that
-the performance of the validation process should be reported,
-and "xval" means the cross-validation performance to be
-retrieved.}
+\item{performance_type}{Character. Specify which performance metric should be
+reported: \code{"train"} for training data, \code{"valid"}
+for validation, or \code{"xval"} for cross-validation (default).}
 
-\item{minimum_performance}{the minimum performance metric for a recognizable model.
-any model with performance equal or lower than this
-argument will have weight of zero in computing the
-weighted mean and CI SHAP values. the default value is
-zero.}
+\item{minimum_performance}{Numeric. Specify the minimum performance metric
+for a model to be included in calculating weighted
+mean SHAP ratio Models below this threshold receive
+zero weight. The default is \code{0}.}
 
-\item{method}{character, specifying the method used for identifying the most
-important features according to their weighted SHAP values.
-The default selection method is "shapratio", a method that filters
-for features where the proportion of their relative weighted SHAP
-value exceeds the 'cutoff'. This approach calculates the relative
-contribution of each feature's weighted SHAP value against the
-aggregate of all features, with those surpassing the 'cutoff'
-being selected as top feature.
-Alternatively, the "mean" option can be specified, indicating
-any feature with normalized weighted mean SHAP contribution above
-the specified 'cutoff' should be selected. Another
-alternative options is "lowerCI", which includes
-features whose lower weighted confidence interval exceeds the
-predefined 'cutoff' value (default is relative SHAP of 1%).}
+\item{method}{Character. Specify the method for selecting important features
+based on their weighted mean SHAP ratios. The default is
+\code{"mean"}, which selects features whose weighted mean shap ratio (WMSHAP)
+exceeds the \code{cutoff}. The alternative is
+\code{"lowerCI"}, which selects features whose lower bound of confidence
+interval exceeds the \code{cutoff}.}
 
 \item{cutoff}{numeric, specifying the cutoff for the method used for selecting
 the top features.}
@@ -103,17 +87,24 @@ a list including the GGPLOT2 object, the data frame of SHAP values,
         and performance metric of all models, as well as the model IDs.
 }
 \description{
-Weighted average of SHAP values and weighted SHAP confidence intervals
-             provide a measure of feature importance for a grid of fine-tuned models
-             or base-learners of a stacked ensemble model. Instead of reporting
-             relative SHAP contributions for a single model, this function
-             takes the variability in feature importance of multiple models
-             into account and computes weighted mean and confidence intervals
-             for each feature, taking the performance metric of each model as
-             the weight. The function also provides a plot of the weighted
-             SHAP values and confidence intervals. Currently only models
-             trained by h2o machine learning software or autoEnsemble
-             package are supported.
+Calculates weighted mean SHAP ratios and confidence intervals to assess feature importance
+across a collection of models (e.g., a grid of fine-tuned models or base-learners
+in a stacked ensemble). Rather than reporting relative SHAP contributions for
+only a single model, this function accounts for variability in feature importance
+across multiple models. Each model's performance metric is used as a weight.
+The function also provides a plot of weighted SHAP values with confidence intervals.
+Currently, only models trained by the \code{h2o} machine learning platform,
+\code{autoEnsemble}, and the \code{HMDA} R packages are supported.
+}
+\details{
+The function works as follows:
+   \enumerate{
+     \item SHAP contributions are computed at the individual level (row) for each model for the given "newdata".
+     \item Each model's feature-level SHAP ratios (i.e., share of total SHAP) are computed.
+     \item The performance metrics of the models are used as weights.
+     \item Using the weights vector and shap ratio of features for each model,
+           the weighted mean SHAP ratios and their confidence intervals are computed.
+   }
 }
 \examples{
 
