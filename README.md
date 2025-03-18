@@ -197,16 +197,20 @@ $p_value
 
 ## Specifying number of top features
 
-Traditionally, the selection of a set number of significant features based on the highest SHAP values varied across scientific publications, with some reporting the top 10, 15, or 20. This selection did not account for the variability between models and often was either an arbitrary number. Other papers reported feature importance of all features, which is not practical for large datasets, and also, doesn't consider if features with neglegible SHAP contributions are statistically significant, given the variability across models. However, the calculation of weighted means and 95% confidence intervals allows for a systematic approach to identify features that consistently contribute to the model, across different models. For instance, the default method in the `shapley` package considers features important if their lower bound of the weighted 95% confidence interval ("`lowerCI`") for relative mean SHAP value exceeds `0.01`. This means any feature with a stable relative contribution of at least 1% - relative to the feature with the highest SHAP - is deemed important. This method is also utilized in the `bar` plot, where features are ranked by their weighted mean SHAP values, and the cutoff is applied to the lower confidence interval. This threshold can be adjusted to "`mean`", which sets the cutoff for weighted means, disregarding model variability—although this is experimental and might not be best practice, because it overlooks the variablitity across models and only considers the weighted means. Another experimental criterion - that seems more plausible than the "`mean`" strategy is "`shapratio`", setting a cutoff for the minimum weighted mean SHAP value as a percentage of the total SHAP contributions from all features. This is demonstrated in the `waffle` plot, where features must contribute at least 0.5% to the overall weighted mean SHAP values to be selected.
+Traditionally, the selection of a set number of significant features based on the highest SHAP values varied across scientific publications, with some reporting the top 10, 15, or 20. This selection did not account for the variability between models and often was either an arbitrary number. Other papers reported feature importance of all features, which is not practical for large datasets, and also, doesn't consider if features with neglegible SHAP contributions are statistically significant, given the variability across models. 
 
-Between the "`lowerCI`" and "`shapratio`" methods, each has merits and limitations. "`LowerCI`" addresses variability across models, while "`shapratio`" focuses on feature contribution variability. Implementing both could provide insight into their efficacy and alignment in practice. Future research should explore these methodologies further. 
+However, the calculation of weighted means and 95% confidence intervals allows for a systematic approach to identify features that consistently contribute to the model, across different models. For instance, the default method in the `shapley` package considers features important if their weighted mean shap ration exceeds the specified cutoff. Another alternative is "`lowerCI`", which selects features that their lower bound of their weighted 95% confidence interval for the WMSHAP exceeds the cutoff. This means any feature with a stable relative contribution above the cutoff is deemed important. This method is also utilized in the `bar` plot, where features are ranked by their weighted mean SHAP values, and the cutoff is applied to the lower confidence interval. 
 
-In this regard, the package also suggests a function for testing different criteria. Currently, implementing only `lowerci` and `shapratio` criteria. following the examples above, the __`shapley.top`__ shows features that pass 
+This is demonstrated in the `waffle` plot, where features must contribute at least 0.5% to the overall weighted mean SHAP values to be selected.
+
+Between the "`lowerCI`" and "`mean`" methods, each has merits and limitations. "`LowerCI`" is more conservative, while "`mean`" focuses on the weighted mean shap ratios. 
+
+In this regard, the package also suggests a function for testing different criteria. Currently, implementing only `lowerCI` and `mean` criteria. following the examples above, the __`shapley.top`__ shows features that pass 
 different criteria:
 
 ```r
 # running shapley.top with defult values for the 'result' object
-shapley.top(result, lowerci = 0.01, shapratio = 0.005)
+shapley.top(result, lowerCI = 0.01, mean = 0.005)
 ```
 ```
   feature    lowerci   shapratio lowerCI_criteria shapratio_criteria
