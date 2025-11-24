@@ -18,7 +18,6 @@
 #'                              for the plot.
 #' @param print logical. if TRUE, the WMSHAP summary table for the given row is printed
 #' @importFrom stats na.omit aggregate formula
-#' @importFrom waffle waffle
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
 #'             margin element_text theme_classic labs ylab xlab ggtitle
@@ -67,7 +66,7 @@
 #' #######################################################
 #'
 #' shapley.plot(result, plot = "bar")
-#' shapley.plot(result, plot = "waffle")
+# shapley.plot(result, plot = "waffle")
 #'
 #' #######################################################
 #' ### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
