@@ -22,7 +22,7 @@
 #'                    other plots only use 'discrete' legend.
 #' @param scale_colour_gradient character vector for specifying the color gradients
 #'                              for the plot.
-#' @importFrom waffle waffle
+# @importFrom waffle waffle
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
 #'             margin element_text theme_classic labs ylab xlab ggtitle
@@ -71,7 +71,7 @@
 #' #######################################################
 #'
 #' shapley.plot(result, plot = "bar")
-#' shapley.plot(result, plot = "waffle")
+# shapley.plot(result, plot = "waffle")
 #' }
 #' @export
 
@@ -147,30 +147,31 @@ shapley.plot <- function(shapley,
 
   else if (plot == "waffle") {
 
-    round_to_half <- function(x) {
-      return(round(x * 2) / 2)
-    }
-
-    # Calculate the percentages
-    percentage <- round((mean / sum(mean) * 100), 2)
-
-    shapratio <- round_to_half(shapratio*400)
-
-    # Create a factor with the percentage for the legend
-    legend <- paste0(features, " (", percentage, "%)")
-    # Order the legend by descending percentage
-    #legend <- factor(legend, levels = legend[order(-percentage)])
-    names(shapratio) <- as.character(legend)
-
-    colors <- NA
-    if (length(shapratio) >= 9) {
-      color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
-      colors <- sample(color, length(shapratio))
-    }
-
-    Plot <- waffle(shapratio, rows = 20, size = 1, colors = colors,
-                   title = "Weighted mean SHAP contributions",
-                   legend_pos = "right")
+    # round_to_half <- function(x) {
+    #   return(round(x * 2) / 2)
+    # }
+    #
+    # # Calculate the percentages
+    # percentage <- round((mean / sum(mean) * 100), 2)
+    #
+    # shapratio <- round_to_half(shapratio*400)
+    #
+    # # Create a factor with the percentage for the legend
+    # legend <- paste0(features, " (", percentage, "%)")
+    # # Order the legend by descending percentage
+    # #legend <- factor(legend, levels = legend[order(-percentage)])
+    # names(shapratio) <- as.character(legend)
+    #
+    # colors <- NA
+    # if (length(shapratio) >= 9) {
+    #   color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+    #   colors <- sample(color, length(shapratio))
+    # }
+    #
+    # Plot <- waffle(shapratio, rows = 20, size = 1, colors = colors,
+    #                title = "Weighted mean SHAP contributions",
+    #                legend_pos = "right")
+    stop("due to an issue with the 'waffle' package on CRAN, this function is temporarily disabbled")
   }
 
   else if (plot == "shap") {
