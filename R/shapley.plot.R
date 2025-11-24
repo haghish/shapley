@@ -180,7 +180,7 @@ shapley.plot <- function(shapley,
     Plot <- shapley$contributionPlot +
       ggtitle("") +
       xlab("Features\n") +
-      ylab("\nSHAP contribution") +
+      ylab("\nWMSHAP contribution") +
       theme_classic() +
       labs(colour = "Normalized values") +
       theme(
