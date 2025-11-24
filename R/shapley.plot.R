@@ -22,6 +22,11 @@
 #'                    other plots only use 'discrete' legend.
 #' @param scale_colour_gradient character vector for specifying the color gradients
 #'                              for the plot.
+#' @param labels provide feature labels for items in the dataset. If specified,
+#'               feature descriptions will be shown in the plot instead of the
+#'               feature names as included in the dataset. To specify the labels,
+#'               use the \code{c} function and list the labes, e.g.,
+#'               \code{c(feature1 = label2, feature2 = label2, ...)}.
 # @importFrom waffle waffle
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
@@ -82,7 +87,8 @@ shapley.plot <- function(shapley,
                          top_n_features = NULL,
                          features = NULL,
                          legendstyle = "continuous",
-                         scale_colour_gradient = NULL) {
+                         scale_colour_gradient = NULL,
+                         labels = NULL) {
 
   # Syntax check
   # ============================================================
@@ -224,6 +230,12 @@ shapley.plot <- function(shapley,
   }
   else {
     stop("plot must be either 'bar', 'waffle', or 'shap'")
+  }
+
+  # Add the labels
+  #
+  if (!is.null(Plot) & !is.null(labels)) {
+    Plot + scale_x_discrete(labels = labels)
   }
 
 
