@@ -181,12 +181,20 @@ shapley.plot <- function(shapley,
   }
 
   else if (plot == "shap") {
+
+    # Make sure the features are in the correct order
+    # ============================================================
+    shapley$contributionPlot$data$feature <- factor(
+      shapley$summaryShaps$feature,
+      levels = shapley$summaryShaps$feature[order(
+        shapley$summaryShaps[["mean"]])])
+
     # STEP 3: PLOT
     # ============================================================
     Plot <- shapley$contributionPlot +
       ggtitle("") +
       xlab("Features\n") +
-      ylab("\nWMSHAP contribution") +
+      ylab("\nWeighted Mean SHAP contributions") +
       theme_classic() +
       labs(colour = "Normalized values") +
       theme(
@@ -232,11 +240,12 @@ shapley.plot <- function(shapley,
     stop("plot must be either 'bar', 'waffle', or 'shap'")
   }
 
-  # Add the labels
-  #
+  # Add the labels for features, if specified
+  # ============================================================
   if (!is.null(Plot) & !is.null(labels)) {
     Plot + scale_x_discrete(labels = labels)
   }
+
 
 
 
