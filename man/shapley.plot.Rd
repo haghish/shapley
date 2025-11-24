@@ -95,7 +95,6 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 #######################################################
 
 shapley.plot(result, plot = "bar")
-shapley.plot(result, plot = "waffle")
 }
 }
 \author{
