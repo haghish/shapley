@@ -12,7 +12,8 @@ shapley.plot(
   top_n_features = NULL,
   features = NULL,
   legendstyle = "continuous",
-  scale_colour_gradient = NULL
+  scale_colour_gradient = NULL,
+  labels = NULL
 )
 }
 \arguments{
@@ -45,6 +46,12 @@ other plots only use 'discrete' legend.}
 
 \item{scale_colour_gradient}{character vector for specifying the color gradients
 for the plot.}
+
+\item{labels}{provide feature labels for items in the dataset. If specified,
+feature descriptions will be shown in the plot instead of the
+feature names as included in the dataset. To specify the labels,
+use the \code{c} function and list the labes, e.g.,
+\code{c(feature1 = label2, feature2 = label2, ...)}.}
 }
 \value{
 ggplot object
