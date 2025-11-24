@@ -28,10 +28,13 @@ feature.selection <- function(shapley,
                               top_n_features=NULL,
                               features = NULL) {
 
-  # variables
+  # variables and feature selection
   # ============================================================
   DATA <- shapley$contributionPlot$data
-  if (is.null(features)) features <- as.character(shapley$summaryShaps$feature)
+
+  # if no cutoff or feature is specified, use all features. otherwise, select
+  # the features based on the specified cutoff value or top_n_features
+  if (is.null(features) & cutoff == 0) features <- as.character(shapley$summaryShaps$feature)
 
   # Select the features that meet the criteria
   # ============================================================
@@ -46,11 +49,17 @@ feature.selection <- function(shapley,
     }
     else if (method == "mean") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
+      if (is.null(features) & cutoff > 0) {
+        features <- as.character(shapley$summaryShaps$feature)
+      }
       shapley$contributionPlot$data <- DATA[DATA$feature %in% features, ]
 
     } else if (method == "lowerCI") {
       if (length(shapley[["ids"]]) == 1) stop("shapley object includes a single model and lowerCI cannot be used")
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$lowerCI > cutoff, ]
+      if (is.null(features) & cutoff > 0) {
+        features <- as.character(shapley$summaryShaps$feature)
+      }
       shapley$contributionPlot$data <- DATA[DATA$feature %in% features, ]
 
     } else {
