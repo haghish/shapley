@@ -243,11 +243,8 @@ shapley.plot <- function(shapley,
   # Add the labels for features, if specified
   # ============================================================
   if (!is.null(Plot) & !is.null(labels)) {
-    Plot + scale_x_discrete(labels = labels)
+    Plot <- Plot + scale_x_discrete(labels = labels)
   }
-
-
-
 
   print(Plot)
   return(Plot)
