@@ -39,13 +39,20 @@ feature.selection <- function(shapley,
   # Select the features that meet the criteria
   # ============================================================
   if (length(shapley[["ids"]]) >= 1) {
+
+    # Select the top N features
     if (!is.null(top_n_features)) {
       shapley$summaryShaps <- shapley$summaryShaps[order(
         shapley$summaryShaps$mean, decreasing = TRUE), ]
       shapley$summaryShaps <- shapley$summaryShaps[1:top_n_features, ]
 
+      if (is.null(features) & cutoff > 0) {
+        features <- as.character(shapley$summaryShaps$feature)
+      }
+
       shapley$contributionPlot$data <- DATA[
         DATA$feature %in% features, ]
+
     }
     else if (method == "mean") {
       shapley$summaryShaps <- shapley$summaryShaps[shapley$summaryShaps$mean > cutoff, ]
