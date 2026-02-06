@@ -71,7 +71,7 @@
 #' #######################################################
 #' ### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
 #' #######################################################
-#' shapley.domain(shapley = shapley, plot = "bar",
+#' shapley.domain(shapley = result, plot = "bar",
 #'                domains = list(Demographic = c("RACE", "AGE"),
 #'                               Cancer = c("VOL", "PSA", "GLEASON"),
 #'                               Tests = c("DPROS", "DCAPS")),
@@ -86,13 +86,15 @@ shapley.domain <- function(shapley,
                            legendstyle = "continuous",
                            scale_colour_gradient = NULL, #this is a BUG because it is not implemented
                            # COLORCODE IS MISSING :(
-                           print = FALSE) {
+                           print = FALSE,
+                           xlab = "Domains") {
 
   # Variable definitions
   # ============================================================
   DOMAINS <- names(domains)
   FILLCOLOR <- NULL
   mean      <- NA
+  Plot      <- NULL
 
   # COLORCODE <- c("#07B86B", "#07a9b8","#b86207","#b8b207", "#b80786",
   #                "#073fb8", "#b8073c", "#8007b8", "#bdbdbd", "#4eb807")
@@ -120,11 +122,7 @@ shapley.domain <- function(shapley,
       ci = NA,
       lowerCI = NA,
       upperCI = NA)
-  }
 
-  # Print the bar plot at DOMAIN level
-  # ============================================================
-  if (plot == "bar" & !is.null(domains) ) {
     w <- shapley$weights
     # create a raw dataset for domain data
     results <- as.data.frame(shapley$results)
@@ -247,38 +245,46 @@ shapley.domain <- function(shapley,
     ftr <- SUMMARY$domain #FEATURES
     lci <- SUMMARY$lowerCI
     uci <- SUMMARY$upperCI
-
-
-    Plot <- ggplot(data = NULL,
-                   aes(x = ftr,
-                       y = SUMMARY$mean)) +
-      geom_col(fill = FILLCOLOR, alpha = 0.8) +
-      geom_errorbar(aes(ymin = lci,
-                        ymax = uci),
-                    width = 0.2, color = "#7A004BF0",
-                    alpha = 0.75, linewidth = 0.7) +
-      coord_flip() +  # Rotating the graph to have mean values on X-axis
-      ggtitle("") +
-      xlab("Domains\n") +
-      ylab("\nWeighted Mean SHAP contributions of domains") +
-      theme_classic() +
-      # Reduce top plot margin
-      theme(plot.margin = margin(t = -0.5,
-                                 r = .25,
-                                 b = .25,
-                                 l = .25,
-                                 unit = "cm")) +
-      # Set lower limit of expansion to 0
-      scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
-
-    Plot$domainSummary <- SUMMARY
-    Plot$domainRatio <- domainRatio
   }
 
-  print(Plot)
+
+  # Print the bar plot at DOMAIN level
+  # ============================================================
+  if (!is.null(plot) & !is.null(domains) ) {
+    if (plot == "bar") {
+      Plot <- ggplot(data = NULL,
+                     aes(x = ftr,
+                         y = SUMMARY$mean)) +
+        geom_col(fill = FILLCOLOR, alpha = 0.8) +
+        geom_errorbar(aes(ymin = lci,
+                          ymax = uci),
+                      width = 0.2, color = "#7A004BF0",
+                      alpha = 0.75, linewidth = 0.7) +
+        coord_flip() +  # Rotating the graph to have mean values on X-axis
+        ggtitle("") +
+        xlab(paste0(xlab,"\n")) +
+        ylab("\nWeighted Mean SHAP contributions of domains") +
+        theme_classic() +
+        # Reduce top plot margin
+        theme(plot.margin = margin(t = -0.5,
+                                   r = .25,
+                                   b = .25,
+                                   l = .25,
+                                   unit = "cm")) +
+        # Set lower limit of expansion to 0
+        scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
+
+      # Plot$domainSummary <- SUMMARY
+      # Plot$domainRatio <- domainRatio
+    }
+  }
+
+  if (!is.null(plot)) print(Plot)
   if (print) print(SUMMARY)
 
-  return(Plot)
+  return(list(domainSummary = SUMMARY,
+              domainRatio   = domainRatio,
+              plot          = Plot))
 }
 
 
