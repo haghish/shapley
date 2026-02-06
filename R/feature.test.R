@@ -13,7 +13,7 @@
 # var1 <- rnorm(100)
 # var2 <- rnorm(100)
 # weights <- runif(100)
-# result <- weighted_permutation_test(var1, var2, weights)
+# result <- feature.test(var1, var2, weights)
 # print(result$obs_diff)
 # print(result$p_value)
 
@@ -42,7 +42,7 @@ feature.test <- function(var1, var2, weights, n = 2000) {
   p_value <- greater_count / n
 
   return(list(
-    mean_shapley_diff = obs_diff,
+    mean_wmshap_diff = obs_diff,
     p_value = p_value
   ))
 }
