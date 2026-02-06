@@ -51,7 +51,7 @@
 #' ### Significance testing of contributions of two features
 #' #######################################################
 #'
-#' shapley.test(result, features = c("GLEASON", "PSA"), n=5000)
+#' shapley.feature.test(result, features = c("GLEASON", "PSA"), n = 5000)
 #' }
 #' @export
 
@@ -79,12 +79,12 @@ shapley.feature.test <- function(shapley, features, n = 5000) {
 
   if (results$p_value < 0.05) {
     message(paste0("The difference between the two features is significant:\n",
-                  "observed weighted mean Shapley difference = ", as.character(results$mean_shapley_diff), " and ",
+                  "observed Weighted Mean Shapley (WMSHAP) difference = ", as.character(results$mean_shapley_diff), " and ",
                   "p-value = ", as.character(results$p_value)))
 
   } else {
     message(paste0("The difference between the two features is not significant:\n",
-                   "observed weighted mean Shapley difference =", as.character(results$mean_shapley_diff), " and ",
+                   "observed Weighted Mean Shapley (WMSHAP) difference =", as.character(results$mean_shapley_diff), " and ",
                    "p-value = ", as.character(results$p_value)))
   }
 
