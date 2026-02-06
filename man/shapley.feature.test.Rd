@@ -65,7 +65,7 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 ### Significance testing of contributions of two features
 #######################################################
 
-shapley.test(result, features = c("GLEASON", "PSA"), n=5000)
+shapley.feature.test(result, features = c("GLEASON", "PSA"), n = 5000)
 }
 }
 \author{
