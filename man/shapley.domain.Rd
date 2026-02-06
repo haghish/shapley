@@ -10,7 +10,8 @@ shapley.domain(
   plot = "bar",
   legendstyle = "continuous",
   scale_colour_gradient = NULL,
-  print = FALSE
+  print = FALSE,
+  xlab = "Domains"
 )
 }
 \arguments{
@@ -90,7 +91,7 @@ shapley.plot(result, plot = "bar")
 #######################################################
 ### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
 #######################################################
-shapley.domain(shapley = shapley, plot = "bar",
+shapley.domain(shapley = result, plot = "bar",
                domains = list(Demographic = c("RACE", "AGE"),
                               Cancer = c("VOL", "PSA", "GLEASON"),
                               Tests = c("DPROS", "DCAPS")),
