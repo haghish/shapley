@@ -16,6 +16,6 @@ Imports:
     h2o (>= 3.34.0.0),
     curl (>= 4.3.0),
     pander (>= 0.6.5)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: https://github.com/haghish/shapley
 BugReports: https://github.com/haghish/shapley/issues
