@@ -2,7 +2,7 @@
 % Please edit documentation in R/feature.test.R
 \name{feature.test}
 \alias{feature.test}
-\title{Weighted Permutation Test for Difference of Means}
+\title{Weighted permutation test for paired difference of means}
 \usage{
 feature.test(var1, var2, weights, n = 2000)
 }
@@ -11,15 +11,28 @@ feature.test(var1, var2, weights, n = 2000)
 
 \item{var2}{A numeric vector of the same length as \code{var1}.}
 
-\item{weights}{A numeric vector of weights, assumed to be the same for both \code{var1} and \code{var2}.}
+\item{weights}{A numeric vector of non-negative weights of the same length as \code{var1} and \code{var2}.}
 
-\item{n}{The number of permutations to perform (default is 2000).}
+\item{n}{Integer. Number of permutations (default 2000).}
 }
 \value{
-A list containing the observed difference in means and the p-value of the test.
+A list with:
+\describe{
+  \item{mean_wmshap_diff}{Observed weighted mean difference (var1 - var2).}
+  \item{p_value}{Monte Carlo permutation p-value.}
+}
 }
 \description{
-This function performs a weighted permutation test to determine if there is a significant
-difference between the means of two weighted numeric vectors. It tests the null hypothesis
-that the difference in means is zero against the alternative that it is not zero.
+Performs a weighted permutation test for the null hypothesis that the
+             weighted mean of (var1 - var2) is zero.
+}
+\examples{
+\dontrun{
+var1 <- rnorm(100)
+var2 <- rnorm(100)
+weights <- runif(100)
+result <- shapley:::feature.test(var1, var2, weights)
+result$mean_wmshap_diff
+result$p_value
+}
 }
