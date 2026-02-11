@@ -80,8 +80,8 @@
 shapley.domain <- function(shapley,
                            domains,
                            plot = TRUE,
-                           colorcode = NULL,
                            print = FALSE,
+                           colorcode = NULL,
                            xlab = "Domains") {
 
   # Variable definitions
