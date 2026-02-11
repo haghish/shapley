@@ -10,7 +10,7 @@ h2o.get_ids(h2oboard)
 \item{h2oboard}{An object inheriting from \code{"H2OAutoML"} or \code{"H2OGrid"}.}
 }
 \value{
-a character vector of trained models' names (IDs)
+A character vector of trained model IDs.
 }
 \description{
 Extracts model IDs from a \code{"H2OAutoML"} object (via the leaderboard)
