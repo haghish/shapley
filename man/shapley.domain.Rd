@@ -8,8 +8,8 @@ shapley.domain(
   shapley,
   domains,
   plot = TRUE,
-  colorcode = NULL,
   print = FALSE,
+  colorcode = NULL,
   xlab = "Domains"
 )
 }
@@ -21,9 +21,9 @@ each element value is a character vector of feature names assigned to that domai
 
 \item{plot}{Logical. If \code{TRUE}, a bar plot of domain WMSHAP contributions is created.}
 
-\item{colorcode}{Character vector for specifying the color names for each domain in the plot.}
-
 \item{print}{Logical. If TRUE, prints the domain WMSHAP summary table.}
+
+\item{colorcode}{Character vector for specifying the color names for each domain in the plot.}
 }
 \value{
 A list with:
