@@ -2,12 +2,11 @@
 % Please edit documentation in R/feature.selection.R
 \name{feature.selection}
 \alias{feature.selection}
-\title{Selects the top features with highest weighted mean shap values based on the
-       specified criteria}
+\title{Select top features by weighted mean SHAP (WMSHAP)}
 \usage{
 feature.selection(
   shapley,
-  method = "mean",
+  method = "lowerCI",
   cutoff = 0,
   top_n_features = NULL,
   features = NULL
@@ -16,31 +15,32 @@ feature.selection(
 \arguments{
 \item{shapley}{shapley object}
 
-\item{method}{Character. The column name in \code{summaryShaps} used
-for feature selection. Default is \code{"mean"}, which
-selects important features which have weighted mean shap
-ratio (WMSHAP) higher than the specified cutoff. Other
-alternative is "lowerCI", which selects features which
-their lower bound of confidence interval is higher than
-the cutoff.}
+\item{method}{Character. Specifies statistic used for thresholding.
+Either \code{"mean"} or \code{"lowerCI"} (default) should be specified.
+Ignored if `top_n_features` is provided.}
 
-\item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features. the default is zero, which means that all
-features with the "method" criteria above zero will be selected.}
+\item{cutoff}{Numeric. Cutoff for thresholding on `method`.
+Default is zero, which means that all
+features with lower WMSHAP CI above zero will be selected.}
 
-\item{top_n_features}{integer. if specified, the top n features with the
-highest weighted SHAP values will be selected, overrullung
-the 'cutoff' and 'method' arguments.}
+\item{top_n_features}{Integer. If provided, selects the top N features by `mean`,
+overriding `method` and `cutoff`.}
 
-\item{features}{character vector, specifying the feature to be plotted.}
+\item{features}{Character vector of features to keep. If provided, it is applied
+before `top_n_features`/`cutoff` selection (i.e., selection happens within this set).}
 }
 \value{
-normalized numeric vector
+A list with:
+\describe{
+  \item{shapley}{The updated shapley object.}
+  \item{features}{Character vector of selected features, ordered by decreasing mean SHAP.}
+  \item{mean}{Numeric vector of mean SHAP values aligned with `features`.}
+}
 }
 \description{
-This function specifies the top features and prepares the data
-             for plotting SHAP contributions for each row, or summary of absolute
-             SHAP contributions for each feature.
+Selects a subset of features from a shapley object.
+             Features can be selected by: (1) specified `features`,
+             (2) `top_n_features`, or (3) WMSHAP cutoff for "mean" or "lowerCI".
 }
 \author{
 E. F. Haghish
