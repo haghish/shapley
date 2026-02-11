@@ -14,13 +14,18 @@ normalize(x, min = NULL, max = NULL)
 \item{max}{maximum value}
 }
 \value{
-normalized numeric vector
+A numeric vector of the same length as \code{x}
 }
 \description{
 This function normalizes a vector based on specified minimum
              and maximum values. If the minimum and maximum values are not
              specified, the function will use the minimum and maximum values
-             of the vector.
+             of the vector (ignoring missing values).
+}
+\examples{
+normalize(c(0, 5, 10))
+normalize(c(1, 1, 1))
+normalize(c(NA, 2, 3))
 }
 \author{
 E. F. Haghish
