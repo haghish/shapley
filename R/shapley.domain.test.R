@@ -1,13 +1,12 @@
-#' @title Normalize a vector based on specified minimum and maximum values
-#' @description This function normalizes a vector based on specified minimum
-#'              and maximum values. If the minimum and maximum values are not
-#'              specified, the function will use the minimum and maximum values
-#'              of the vector.
-#' @param shapley object of class 'shapley', as returned by the 'shapley' function
-#' @param domains character, name of two features to be compared with permutation test
-#' @param n integer, number of permutations
+#' @title Weighted permutation test for difference between two domains
+#' @description Computes domain-level contribution ratios (via \code{shapley.domain()}) and tests whether
+#'              two domains differ using a weighted paired permutation test across models.
+#' @param shapley Object of class \code{"shapley"}, as returned by the 'shapley' function
+#' @param domains A named list of length 2. Each element is a character vector of feature names
+#'                defining a domain; the two element names are the domain labels to be compared.
+#' @param n Integer, number of permutations (default 2000)
 #' @author E. F. Haghish
-#' @return normalized numeric vector
+#' @return A list with \code{mean_wmshap_diff} (observed weighted mean difference) and \code{p_value}.
 #' @examples
 #'
 #' \dontrun{
@@ -56,16 +55,18 @@
 #' }
 #' @export
 
-shapley.domain.test <- function(shapley, domains, n = 5000) {
+shapley.domain.test <- function(shapley, domains, n = 2000) {
 
   # Syntax check
   # ============================================================
   if (!inherits(shapley, "shapley"))
-    stop("shapley object must be of class 'shapley'")
-  if (length(domains) != 2) stop("domain must be a vector of length 2")
-  # ??? improve domain element check
-  # if (!all(domain %in% names(shapley$feature_importance)))
-  #   stop("domain must be a subset of the domain in the shapley object")
+    stop("`shapley` must be of class 'shapley'.", call. = FALSE)
+  if (!is.list(domains) || length(domains) != 2L) {
+    stop("`domains` must be a named list of length 2.", call. = FALSE)
+  }
+  if (is.null(names(domains)) || anyNA(names(domains)) || any(names(domains) == "")) {
+    stop("`domains` must be a *named* list of length 2.", call. = FALSE)
+  }
   if (!is.numeric(n)) stop("n must be numeric")
   if (n < 100) stop("n must be greater than or equal to 100")
 
@@ -74,33 +75,32 @@ shapley.domain.test <- function(shapley, domains, n = 5000) {
   dom <- shapley.domain(shapley,
                         domains,
                         print = FALSE,
-                        plot = NULL)
+                        plot = FALSE)
+
+  COLUMNS <- grep("^contribution", names(dom$domainRatio), value = TRUE)
 
   # Prepare the variables
   # ============================================================
-  var1 <- as.numeric(dom$domainRatio[dom$domainRatio$domain == names(domains)[1],
-                          grep("^contribution", names(dom$domainRatio))])
-  var2 <- as.numeric(dom$domainRatio[dom$domainRatio$domain == names(domains)[2],
-                          grep("^contribution", names(dom$domainRatio))])
+  var1 <- as.numeric(dom$domainRatio[dom$domainRatio$domain == names(domains)[1], COLUMNS])
+  var2 <- as.numeric(dom$domainRatio[dom$domainRatio$domain == names(domains)[2], COLUMNS])
 
-  # var1    <- unlist(shapley$feature_importance[features[1]])
-  # var2    <- unlist(shapley$feature_importance[features[2]])
   weights <- shapley$weights
 
   # Run the test
   # ============================================================
-  print(class(var1))
   results <- feature.test(var1, var2, weights, n)
 
   if (results$p_value < 0.05) {
     message(paste0("The difference between the two domains is significant:\n",
-                  "observed Weighted Mean Shapley (WMSHAP) difference = ", as.character(results$mean_shapley_diff), " and ",
-                  "p-value = ", as.character(results$p_value)))
+                  "observed Weighted Mean Shapley (WMSHAP) difference = ",
+                  as.character(results$mean_wmshap_diff), " and p-value = ",
+                  as.character(results$p_value)))
 
   } else {
     message(paste0("The difference between the two domains is not significant:\n",
-                   "observed Weighted Mean Shapley (WMSHAP) difference =", as.character(results$mean_shapley_diff), " and ",
-                   "p-value = ", as.character(results$p_value)))
+                   "observed Weighted Mean Shapley (WMSHAP) difference =",
+                   as.character(results$mean_wmshap_diff), " and p-value = ",
+                   as.character(results$p_value)))
   }
 
   return(results)
