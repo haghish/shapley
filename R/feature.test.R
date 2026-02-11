@@ -1,45 +1,74 @@
-#' Weighted Permutation Test for Difference of Means
+#' @title Weighted permutation test for paired difference of means
 #'
-#' This function performs a weighted permutation test to determine if there is a significant
-#' difference between the means of two weighted numeric vectors. It tests the null hypothesis
-#' that the difference in means is zero against the alternative that it is not zero.
+#' @description Performs a weighted permutation test for the null hypothesis that the
+#'              weighted mean of (var1 - var2) is zero.
 #'
 #' @param var1 A numeric vector.
 #' @param var2 A numeric vector of the same length as \code{var1}.
-#' @param weights A numeric vector of weights, assumed to be the same for both \code{var1} and \code{var2}.
-#' @param n The number of permutations to perform (default is 2000).
-#' @return A list containing the observed difference in means and the p-value of the test.
-# @examples
-# var1 <- rnorm(100)
-# var2 <- rnorm(100)
-# weights <- runif(100)
-# result <- feature.test(var1, var2, weights)
-# print(result$obs_diff)
-# print(result$p_value)
+#' @param weights A numeric vector of non-negative weights of the same length as \code{var1} and \code{var2}.
+#' @param n Integer. Number of permutations (default 2000).
+#' @return A list with:
+#' \describe{
+#'   \item{mean_wmshap_diff}{Observed weighted mean difference (var1 - var2).}
+#'   \item{p_value}{Monte Carlo permutation p-value.}
+#' }
+#' @examples
+#' \dontrun{
+#' var1 <- rnorm(100)
+#' var2 <- rnorm(100)
+#' weights <- runif(100)
+#' result <- shapley:::feature.test(var1, var2, weights)
+#' result$mean_wmshap_diff
+#' result$p_value
+#' }
 
 feature.test <- function(var1, var2, weights, n = 2000) {
+
+  # Syntax check
+  # ============================================================
+  if (!is.numeric(var1) || !is.numeric(var2) || !is.numeric(weights)) {
+    stop("'var1', 'var2', and 'weights' must be numeric.", call. = FALSE)
+  }
   stopifnot(length(var1) == length(var2))
   stopifnot(length(weights) == length(var1))
+  if (anyNA(var1) || anyNA(var2) || anyNA(weights)) {
+    stop("Missing values are not supported", call. = FALSE)
+  }
+  if (any(weights < 0)) {
+    stop("'weights' must be non-negative.", call. = FALSE)
+  }
+  if (is.na(n) || n < 1) {
+    stop("'n' must be a positive integer.", call. = FALSE)
+  }
 
-  # Calculate the weighted mean difference for the original data
+  # Variables
+  # ============================================================
+  # Combine the data and perform permutations
+  sw <- sum(weights)
+  wd <- weights * (var1 - var2)
+
+  combined <- c(var1, var2)
+  weights_combined <- c(weights, weights)
+  LENGTH <- length(var1)
+  greater_count <- 0L
+
+  # Calculate the weighted mean difference for the original data (paired design)
+  # ============================================================
   obs_diff <- sum(weights * (var1 - var2)) / sum(weights)
 
-  # Combine the data and perform permutations
-  combined <- c(var1, var2)
-  greater_count <- 0
   for (i in 1:n) {
-    permuted <- sample(combined, length(combined))
-    x_perm <- permuted[1:length(var1)]
-    y_perm <- permuted[(length(var1) + 1):length(combined)]
-    perm_diff <- sum(weights * (x_perm - y_perm)) / sum(weights)
+    # paired permutation = random swap within each pair = sign flip of (var1 - var2)
+    idx <- sample.int(2L, LENGTH, replace = TRUE)
+    idx <- idx * 2L - 3L  # 1->-1, 2->+1
+    perm_diff <- as.numeric(crossprod(idx, wd)) / sw
 
     if (abs(perm_diff) >= abs(obs_diff)) {
-      greater_count <- greater_count + 1
+      greater_count <- greater_count + 1L
     }
   }
 
-  # Calculate the p-value
-  p_value <- greater_count / n
+  # Monte Carlo p-value (+1 correction, recommended for random sampling permutations)
+  p_value <- (greater_count + 1) / (n + 1)
 
   return(list(
     mean_wmshap_diff = obs_diff,
@@ -47,10 +76,9 @@ feature.test <- function(var1, var2, weights, n = 2000) {
   ))
 }
 
-# Example of usage:
-# var1 <- c(1, 2, 3, 4, 5)
-# var2 <- c(1, 2, 3, 4, 6)
-# weights <- c(0.1, 0.2, 0.3, 0.4, 0.5)
-# result <- weighted_permutation_test(var1, var2, weights)
-# print(result$obs_diff)
-# print(result$p_value)
+# var1 <- rnorm(100)
+# var2 <- rnorm(100)
+# weights <- runif(100)
+# result <- shapley:::feature.test(var1, var2, weights)
+# result$mean_wmshap_diff
+# result$p_value
