@@ -2,18 +2,19 @@
 % Please edit documentation in R/h2o.get_ids.R
 \name{h2o.get_ids}
 \alias{h2o.get_ids}
-\title{h2o.get_ids}
+\title{Extract model IDs from H2O AutoML or Grid objects}
 \usage{
-h2o.get_ids(automl)
+h2o.get_ids(h2oboard)
 }
 \arguments{
-\item{automl}{a h2o \code{"AutoML"} grid object}
+\item{h2oboard}{An object inheriting from \code{"H2OAutoML"} or \code{"H2OGrid"}.}
 }
 \value{
 a character vector of trained models' names (IDs)
 }
 \description{
-extracts the model IDs from H2O AutoML object or H2O grid
+Extracts model IDs from a \code{"H2OAutoML"} object (via the leaderboard)
+             or from a \code{"H2OGrid"} object.
 }
 \examples{
 
@@ -27,7 +28,7 @@ prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
 aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
 
 # get the model IDs
-ids <- h2o.ids(aml)
+ids <- h2o.get_ids(aml)
 }
 }
 \author{
