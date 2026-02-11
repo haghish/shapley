@@ -2,25 +2,24 @@
 % Please edit documentation in R/shapley.feature.test.R
 \name{shapley.feature.test}
 \alias{shapley.feature.test}
-\title{Normalize a vector based on specified minimum and maximum values}
+\title{Weighted permutation test for WMSHAP difference between two features}
 \usage{
-shapley.feature.test(shapley, features, n = 5000)
+shapley.feature.test(shapley, features, n = 2000)
 }
 \arguments{
-\item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
+\item{shapley}{object of class \code{"shapley"}, as returned by the 'shapley' function}
 
-\item{features}{character, name of two features to be compared with permutation test}
+\item{features}{Character vector of length 2 giving the names of the two features to compare.}
 
-\item{n}{integer, number of permutations}
+\item{n}{Integer. Number of permutations (default 2000).}
 }
 \value{
-normalized numeric vector
+A list with \code{mean_wmshap_diff} (observed weighted mean difference) and \code{p_value}.
 }
 \description{
-This function normalizes a vector based on specified minimum
-             and maximum values. If the minimum and maximum values are not
-             specified, the function will use the minimum and maximum values
-             of the vector.
+Performs a weighted paired permutation test to assess whether two features have
+             different contributions (e.g., weighted mean SHAP, referred to as WMSHAP) across models in a \code{shapley}
+             object.
 }
 \examples{
 
