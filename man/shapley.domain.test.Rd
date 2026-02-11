@@ -2,25 +2,24 @@
 % Please edit documentation in R/shapley.domain.test.R
 \name{shapley.domain.test}
 \alias{shapley.domain.test}
-\title{Normalize a vector based on specified minimum and maximum values}
+\title{Weighted permutation test for difference between two domains}
 \usage{
-shapley.domain.test(shapley, domains, n = 5000)
+shapley.domain.test(shapley, domains, n = 2000)
 }
 \arguments{
-\item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
+\item{shapley}{Object of class \code{"shapley"}, as returned by the 'shapley' function}
 
-\item{domains}{character, name of two features to be compared with permutation test}
+\item{domains}{A named list of length 2. Each element is a character vector of feature names
+defining a domain; the two element names are the domain labels to be compared.}
 
-\item{n}{integer, number of permutations}
+\item{n}{Integer, number of permutations (default 2000)}
 }
 \value{
-normalized numeric vector
+A list with \code{mean_wmshap_diff} (observed weighted mean difference) and \code{p_value}.
 }
 \description{
-This function normalizes a vector based on specified minimum
-             and maximum values. If the minimum and maximum values are not
-             specified, the function will use the minimum and maximum values
-             of the vector.
+Computes domain-level contribution ratios (via \code{shapley.domain()}) and tests whether
+             two domains differ using a weighted paired permutation test across models.
 }
 \examples{
 
