@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapley.plot.R
 \name{shapley.plot}
 \alias{shapley.plot}
-\title{Plot weighted SHAP contributions}
+\title{Plot weighted mean SHAP (WMSHAP) contributions}
 \usage{
 shapley.plot(
   shapley,
@@ -17,47 +17,40 @@ shapley.plot(
 )
 }
 \arguments{
-\item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
+\item{shapley}{object of class \code{"shapley"}, as returned by the 'shapley' function}
 
-\item{plot}{character, specifying the type of the plot, which can be either
-'bar', 'waffle', or 'shap'. The default is 'bar'.}
+\item{plot}{Character. One of \code{"bar"} or \code{"wmshap"}.}
 
-\item{method}{Character. The column name in \code{summaryShaps} used
-for feature selection. Default is \code{"mean"}, which
-selects important features which have weighted mean shap
-ratio (WMSHAP) higher than the specified cutoff. Other
-alternative is "lowerCI", which selects features which
-their lower bound of confidence interval is higher than
-the cutoff.}
+\item{method}{Character. One of \code{"mean"} or \code{"lowerCI"}; used by
+\code{feature.selection()} for feature selection
+when \code{top_n_features} or \code{features} are not set.}
 
-\item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features.}
+\item{cutoff}{Numeric cutoff for \code{method} selection.}
 
-\item{top_n_features}{Integer. If specified, the top n features with the
-highest weighted SHAP values will be selected, overrullung
-the 'cutoff' and 'method' arguments.}
+\item{top_n_features}{Integer. If set, selects top N features by WMSHAP
+(overrides cutoff and method arguments).}
 
-\item{features}{character vector, specifying the feature to be plotted.}
+\item{features}{Character vector, specifying the feature to be plotted
+(overrides cutoff and method arguments).}
 
-\item{legendstyle}{character, specifying the style of the plot legend, which
-can be either 'continuous' (default) or 'discrete'. the
-continuous legend is only applicable to 'shap' plots and
-other plots only use 'discrete' legend.}
+\item{legendstyle}{Character. For \code{plot = "wmshap"} only: \code{"continuous"} (default)
+or \code{"discrete"}.}
 
-\item{scale_colour_gradient}{character vector for specifying the color gradients
-for the plot.}
+\item{scale_colour_gradient}{Optional character vector of length 3, specifying
+color names: \code{c(low, mid, high)}.
+Used only when \code{plot = "wmshap"}.}
 
-\item{labels}{provide feature labels for items in the dataset. If specified,
-feature descriptions will be shown in the plot instead of the
-feature names as included in the dataset. To specify the labels,
-use the \code{c} function and list the labes, e.g.,
-\code{c(feature1 = label2, feature2 = label2, ...)}.}
+\item{labels}{Optional named character vector mapping feature names to display labels.
+To specify the labels, use the \code{c} function and for each feature,
+provide a label. For example, \code{c(feature1 = label2, feature2 = label2, ...)}.}
 }
 \value{
-ggplot object
+A ggplot object
 }
 \description{
-This function applies different criteria to visualize SHAP contributions
+Visualizes WMSHAP summaries from a \code{shapley} object. Features can be selected
+             using \code{method} and \code{method/cutoff}, \code{top_n_features},
+             or explicit \code{features} to specify feature selection method.
 }
 \examples{
 
@@ -102,6 +95,7 @@ result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 #######################################################
 
 shapley.plot(result, plot = "bar")
+shapley.plot(result, plot = "wmshap")
 }
 }
 \author{
