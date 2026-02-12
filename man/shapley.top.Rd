@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapley.top.R
 \name{shapley.top}
 \alias{shapley.top}
-\title{Select top features in a model}
+\title{Flag and rank features by WMSHAP cutoffs}
 \usage{
 shapley.top(shapley, mean = 0.01, lowerCI = 0.01)
 }
@@ -72,10 +72,8 @@ aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
 result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 
 #######################################################
-### Significance testing of contributions of two features
+### Select top features
 #######################################################
-
-
 shapley.top(result, mean = 0.005, lowerCI = 0.01)
 }
 }
