@@ -1,17 +1,15 @@
-#' @title Create SHAP Summary Table Based on the Given Criterion
-#' @description Generates a summary table of weighted mean SHAP (WMSHAP) values
-#'   and confidence intervals for each feature based on a weighted SHAP analysis.
-#'   The function filters the SHAP summary table (from a \code{wmshap} object) by
-#'   selecting features that meet or exceed a specified cutoff using a selection
-#'   method (default "mean", which is weighted mean shap ratio).
-#'   It then sorts the table by the mean SHAP value,
-#'   formats the SHAP values along with their 95\% confidence intervals into a single
-#'   string, and optionally adds human-readable feature descriptions from a provided
-#'   dictionary. The output is returned as a markdown table using the \pkg{pander}
-#'   package, or as a data frame if requested.
+#' @title Create WMSHAP Summary Table Based on the Given Criterion
+#' @description
+#' #' Generates a summary table of weighted mean SHAP ratios (WMSHAP) and confidence intervals
+#' for each feature based on a weighted SHAP analysis. The function filters the SHAP summary
+#' table (from a \code{shapley} object) by selecting features that meet or exceed a specified
+#' cutoff using a selection method (default \code{"mean"}).
 #'
-#' @param wmshap             A wmshap object, returned by the shapley function
-#'                           containing a data frame \code{summaryShaps}.
+#' The output is sorted by WMSHAP and formatted as either a markdown table (via \pkg{pander})
+#' or a data frame.
+#'
+#' @param shapley             A \code{shapley} object returned by \code{\link{shapley}} that contains
+#'                           a data frame \code{summaryShaps}.
 #' @param method             Character. The column name in \code{summaryShaps} used
 #'                           for feature selection. Default is \code{"mean"}, which
 #'                           selects important features which have weighted mean shap
@@ -47,7 +45,7 @@
 #  @details
 #    The function works as follows:
 #    \enumerate{
-#      \item Filters the \code{summaryShaps} data frame from the \code{wmshap}
+#      \item Filters the \code{summaryShaps} data frame from the \code{shapley}
 #            object to retain only those features for which the value in the
 #            \code{method} column is greater than or equal to the \code{cutoff}.
 #      \item Excludes any features specified in \code{exclude_features}.
@@ -115,7 +113,7 @@
 #' result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 #'
 #' # get the output as a Markdown table:
-#' md_table <- shapley.table(wmshap = result2,
+#' md_table <- shapley.table(shapley = result2,
 #'                           method = "mean",
 #'                           cutoff = 0.01,
 #'                           round = 3,
@@ -127,7 +125,7 @@
 #' @export
 #' @author E. F. Haghish
 
-shapley.table <- function(wmshap,
+shapley.table <- function(shapley,
                           method = "mean",
                           cutoff = 0.01,
                           round = 3,
@@ -139,7 +137,7 @@ shapley.table <- function(wmshap,
 
   # Exclude features that do not meet the criteria
   # ====================================================
-  summaryShaps <- wmshap$summaryShaps
+  summaryShaps <- shapley$summaryShaps
   summaryShaps <- summaryShaps[summaryShaps[, method] >= cutoff, ]
   summaryShaps <- summaryShaps[!summaryShaps[,"feature"] %in% exclude_features, ]
 
@@ -187,6 +185,6 @@ shapley.table <- function(wmshap,
   }
 }
 
-#shapley.table(wmshap, method = "mean", cutoff = 0.01, dict = dictionary(raw, attribute = "label"))
-#shapley.table(wmshap, method = "mean", cutoff = 0.01, dict = dict)
-#shapley.table(wmshap, method = "mean", cutoff = 0.01)
+#shapley.table(shapley, method = "mean", cutoff = 0.01, dict = dictionary(raw, attribute = "label"))
+#shapley.table(shapley, method = "mean", cutoff = 0.01, dict = dict)
+#shapley.table(shapley, method = "mean", cutoff = 0.01)
