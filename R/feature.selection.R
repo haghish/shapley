@@ -31,7 +31,6 @@ feature.selection <- function(shapley,
 
   # Basic checks
   # ============================================================
-  method <- match.arg(method)            # allow abbreviations
   if (is.null(shapley[["summaryShaps"]]) || is.null(shapley[["contributionPlot"]][["data"]])) {
     stop("shapley must include 'summaryShaps' and 'contributionPlot$data'", call. = FALSE)
   }
