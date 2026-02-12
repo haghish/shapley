@@ -1,4 +1,4 @@
-#' @title Select top features in a model
+#' @title Flag and rank features by WMSHAP cutoffs
 #' @description This function applies different criteria simultaniously to identify
 #'              the most important features in a model. The criteria include:
 #'              1) minimum limit of lower weighted confidence intervals of SHAP values
@@ -17,7 +17,6 @@
 #'                         be more generous in defining "importance", while higher values
 #'                         are more restrictive. However, these default values are not
 #'                         generalizable to all situations and algorithms.
-
 #' @author E. F. Haghish
 #' @return data.frame of selected features
 #' @examples
@@ -59,10 +58,8 @@
 #' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
 #'
 #' #######################################################
-#' ### Significance testing of contributions of two features
+#' ### Select top features
 #' #######################################################
-#'
-#'
 #' shapley.top(result, mean = 0.005, lowerCI = 0.01)
 #' }
 #' @export
