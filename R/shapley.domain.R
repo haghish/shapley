@@ -10,6 +10,7 @@
 #' @param plot Logical. If \code{TRUE}, a bar plot of domain WMSHAP contributions is created.
 #' @param colorcode Character vector for specifying the color names for each domain in the plot.
 #' @param print Logical. If TRUE, prints the domain WMSHAP summary table.
+#' @param xlab Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")
 #' @importFrom stats na.omit aggregate formula
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
