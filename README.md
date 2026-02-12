@@ -219,7 +219,7 @@ Stacked ensemble models integrate multiple base learner models' predictions, ass
 
 ## Supported Machine Learning models
 
-The package is compatible with machine learning grids or stacked ensemble models created using the [`h2o`](https://h2o.ai/blog/2022/shapley-values-a-gentle-introduction/) package, as well as the [`autoEnsemble`](https://cran.r-project.org/package=autoEnsemble) package in R.
+The package is compatible with machine learning grids or stacked ensemble models created using the [`h2o`](https://h2o.ai/) package, as well as the [`autoEnsemble`](https://cran.r-project.org/package=autoEnsemble) package in R.
 
 ## About the author
 
