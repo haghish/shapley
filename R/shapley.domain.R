@@ -73,8 +73,7 @@
 #'                domains = list(Demographic = c("RACE", "AGE"),
 #'                               Cancer = c("VOL", "PSA", "GLEASON"),
 #'                               Tests = c("DPROS", "DCAPS")),
-#'                               print = TRUE
-# ))
+#'                               print = TRUE)
 #' }
 #' @export
 
