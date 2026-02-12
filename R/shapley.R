@@ -1,105 +1,83 @@
-#' @title Weighted Mean SHAP Ratio and Confidence Interval for a ML Grid
-#'        of Fine-Tuned Models or Base-Learners of a Stacked Ensemble Model
+# check sample_size argument
+
+#' @title Weighted Mean SHAP (WMSHAP) and Confidence Interval for Multiple Models
+#'        (tuning grid, stacked ensemble, etc.)
 #'
 #' @description
-#' Calculates weighted mean SHAP ratios and confidence intervals to assess feature importance
-#' across a collection of models (e.g., a grid of fine-tuned models or base-learners
-#' in a stacked ensemble). Rather than reporting relative SHAP contributions for
-#' only a single model, this function accounts for variability in feature importance
-#' across multiple models. Each model's performance metric is used as a weight.
-#' The function also provides a plot of weighted SHAP values with confidence intervals.
+#' Computes Weighted Mean SHAP ratios (WMSHAP) and confidence intervals to assess feature
+#' importance across a collection of models (e.g., an H2O grid/AutoML leaderboard or
+#' base-learners of an ensemble). Instead of reporting SHAP contributions for a single model,
+#' this function summarizes feature importance across multiple models and weights each model
+#' by a chosen performance metric.
 #' Currently, only models trained by the \code{h2o} machine learning platform,
 #' \code{autoEnsemble}, and the \code{HMDA} R packages are supported.
 #'
 #' @details
 #'    The function works as follows:
 #'    \enumerate{
-#'      \item SHAP contributions are computed at the individual level (row) for each model for the given "newdata".
-#'      \item Each model's feature-level SHAP ratios (i.e., share of total SHAP) are computed.
-#'      \item The performance metrics of the models are used as weights.
-#'      \item Using the weights vector and shap ratio of features for each model,
-#'            the weighted mean SHAP ratios and their confidence intervals are computed.
+#'      \item For each model, SHAP contributions are computed on \code{newdata}.
+#'      \item For each model, feature-level absolute SHAP contributions are aggregated and
+#'            converted to a \emph{ratio} (share of total absolute SHAP across features).
+#'      \item Models are weighted by a performance metric (e.g., \code{"r2"} for regression or
+#'            \code{"auc"} / \code{"aucpr"} for classification).
+#'      \item The weighted mean SHAP ratio (WMSHAP) is computed for each feature, along with an
+#'            confidence interval across models.
 #'    }
 #'
-#' @param models h2o search grid, autoML grid, or a character vector of H2O model IDs.
-#' @param newdata An \code{h2o} frame (or \code{data.frame}) already uploaded to the
-#'                \code{h2o} server. This data will be used for computing SHAP
-#'                contributions for each model, alongside model's performance
-#'                weights.
-#' @param performance_metric Character specifying which performance metric to use
-#'                           as weights. The default is \code{"r2"}, which can
-#'                           be used for both regression and classification.
-#'                           For binary classification, other options include:
-#'                           \code{"aucpr"} (area under the precision-recall curve),
-#'                           \code{"auc"} (area under the ROC curve),
-#'                           and \code{"f2"} (F2 score).
-#' @param standardize_performance_metric Logical, indicating whether to standardize
-#'                                       the performance metric used as weights so
-#'                                       their sum equals the number of models. The
-#'                                       default is \code{FALSE}.
-#' @param performance_type Character. Specify which performance metric should be
-#'                        reported: \code{"train"} for training data, \code{"valid"}
+#' @param models An H2O AutoML object, H2O grid object, \code{autoEnsemble} object,
+#'               or a character vector of H2O model IDs.
+#' @param newdata An \code{H2OFrame} (i.e., a \code{data.frame}) already uploaded to the
+#'                \code{h2o} server. SHAP contributions are computed on this data.
+#' @param performance_metric Character. Performance metric used to weight models.
+#'                           Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
+#'                           (classification metrics).
+#' @param standardize_performance_metric Logical. If \code{TRUE}, rescales model weights so
+#'                                       the weights sum to the number of included models.
+#'                                       The default is \code{FALSE}.
+#' @param performance_type Character. Specify which performance metric performance estimate to use:
+#'                         \code{"train"} for training data, \code{"valid"}
 #'                        for validation, or \code{"xval"} for cross-validation (default).
 #' @param minimum_performance Numeric. Specify the minimum performance metric
-#'                            for a model to be included in calculating weighted
-#'                            mean SHAP ratio Models below this threshold receive
-#'                            zero weight. The default is \code{0}.
+#'                            for a model to be included in calculating WMSHAP.
+#'                            Models below this threshold receive
+#'                            zero weight and are excluded. The default is \code{0}.
+#'                            Specifying a minimum performance can be used to compute
+#'                            WMSHAP for a set of competitive models.
 #' @param method Character. Specify the method for selecting important features
-#'               based on their weighted mean SHAP ratios. The default is
-#'               \code{"mean"}, which selects features whose weighted mean shap ratio (WMSHAP)
+#'               based on their WMSHAP. The default is
+#'               \code{"mean"}, which selects features whose WMSHAP
 #'               exceeds the \code{cutoff}. The alternative is
 #'               \code{"lowerCI"}, which selects features whose lower bound of confidence
 #'               interval exceeds the \code{cutoff}.
-#' @param cutoff numeric, specifying the cutoff for the method used for selecting
-#'               the top features.
-#' @param top_n_features integer. if specified, the top n features with the
-#'                       highest weighted SHAP values will be selected, overrullung
-#'                       the 'cutoff' and 'method' arguments. specifying top_n_feature
-#'                       is also a way to reduce computation time, if many features
-#'                       are present in the data set. The default is NULL, which means
-#'                       the shap values will be computed for all features.
-#' @param n_models minimum number of models that should meet the 'minimum_performance'
-#'                 criterion in order to compute WMSHAP and CI. If the intention
-#'                 is to compute global summary SHAP values (at feature level) for
-#'                 a single model, set n_models to 1. The default is 10.
-#' @param sample_size integer. number of rows in the \code{newdata} that should
-#'                    be used for SHAP assessment. By default, all rows are used,
-#'                    which is the recommended procedure for scientific analyses.
-#'                    However, SHAP analysis is time consuming and in the process
-#'                    of code development, lower values can be used for quicker
-#'                    shapley analyses.
-#' @param plot logical. if TRUE, the weighted mean and confidence intervals of
-#'             the SHAP values are plotted. The default is TRUE.
-#'
-# @param normalize_shap_per_model Logical. If TRUE, the SHAP contribution ratio for each
-#                        model is normalized to range between 0 to 1. The default is
-#                        FALSE, which encourages reporting Weighted Mean SHAP Ratios (not ranks)
-#                        comparison between models without scaling each model.
-#                        This option is only provided for rare use cases where
-#                        WMSHAP values are prefered to be scaled to 0 to 1, but
-#                        should otherwise be avoided.
-# @param normalize_to character. The default value is "upperCI", which sets the feature with
-#                     the maximum SHAP value to one, allowing the higher CI to
-#                     go beyond one. Setting this value is mainly for aesthetic
-#                     reason to adjust the Plot, but also, it can influence the
-#                     feature selection process, depending on the method in use,
-#                     because it changes how the SHAP values should be normalized.
-#                     the alternative is 'feature', specifying that
-#                     in the normalization of the SHAP values, the maximum confidence
-#                     interval of the weighted SHAP values should be equal to
-#                     "1", in order to limit the plot values to maximum of one.
-#'
+#' @param cutoff Numeric. Cutoff applied by \code{method} for selecting important features.
+#' @param top_n_features Integer or \code{NULL}. If not \code{NULL}, restricts SHAP computation to the
+#'                       top N features per model (reduces runtime). This also selects the top N features by WMSHAP
+#'                       in the returned \code{selectedFeatures}.
+#' @param n_models Integer. Minimum number of models that must meet the performance threshold
+#'                 for WMSHAP and CI computation. Use \code{1} to compute summary SHAP for a single model.
+#'                 The default is 10.
+#' @param sample_size Integer. Number of rows in \code{newdata} used for SHAP assessment.
+#'                    Defaults to all rows. Reducing this can speed up development runs.
+#' @param plot Logical. If \code{TRUE}, plots the WMSHAP summary (via \code{shapley.plot()}).
 #' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom stats weighted.mean
-#' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.r2
-#'             h2o.F2 h2o.mean_per_class_error h2o.giniCoef h2o.accuracy
-#'             h2o.shap_summary_plot
-# @importFrom h2otools h2o.get_ids
-#' @importFrom curl curl
-#' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
-#'             ylab theme_classic theme scale_y_continuous margin expansion
-#' @return a list including the GGPLOT2 object, the data frame of SHAP values,
-#'         and performance metric of all models, as well as the model IDs.
+#' @importFrom h2o h2o.getModel h2o.auc h2o.aucpr h2o.r2
+#'             h2o.F2 h2o.shap_summary_plot
+#' @return An object of class \code{"shapley"} (a named list) containing:
+#' \describe{
+#'   \item{ids}{Character vector of model IDs originally supplied or extracted.}
+#'   \item{included_models}{Character vector of model IDs included after filtering by performance.}
+#'   \item{ignored_models}{Data frame of excluded models and their performance.}
+#'   \item{weights}{Numeric vector of model weights (performance metrics) for included models.}
+#'   \item{results}{Data frame of row-level SHAP contributions merged across models.}
+#'   \item{summaryShaps}{Data frame of feature-level WMSHAP means and confidence intervals.}
+#'   \item{selectedFeatures}{Character vector of selected important features.}
+#'   \item{feature_importance}{List of per-feature absolute contribution summaries by model.}
+#'   \item{contributionPlot}{A ggplot-like object returned by \code{h2o.shap_summary_plot()}
+#'         used for the WMSHAP (“wmshap”) style plot.}
+#'   \item{plot}{A ggplot object (bar plot) if \code{plot = TRUE}, otherwise \code{NULL}.}
+#' }
+#'
 #' @examples
 #'
 #' \dontrun{
@@ -182,9 +160,7 @@ shapley <- function(models,
                     cutoff = 0.01,
                     top_n_features = NULL,
                     n_models = 10,
-                    sample_size = nrow(newdata)
-                    #normalize_shap_per_model = FALSE
-                    #normalize_to = "upperCI"
+                    sample_size = NULL
 ) {
 
   # Variables definitions
@@ -206,7 +182,16 @@ shapley <- function(models,
   valid <- FALSE
   xval  <- FALSE
 
-  #if (normalize_shap_per_model) message("using 'normalize_shap_per_model' is discouraged! This is for rare use only")
+  # if sample size is NULL, use all the data. otherwise, make a random subset
+  # from the data and use it for the computation
+  # ============================================================
+  if (is.null(sample_size)) {
+    sample_size <- nrow(newdata)
+  }
+  else {
+    newdata <- newdata[sample.int(n = nrow(newdata), size = sample_size, replace = FALSE), ]
+    sample_size <- NULL     #Reset it because it is not needed anymore
+  }
 
   # Syntax check
   # ============================================================
@@ -223,8 +208,7 @@ shapley <- function(models,
   # STEP 0: prepare the models, by either confirming that the models are 'h2o' or 'autoEnsemble'
   #        or by extracting the model IDs from these objects
   # ============================================================
-  if (inherits(models,"H2OAutoML") | inherits(models,"H2OAutoML")
-      | inherits(models,"H2OGrid")) {
+  if (inherits(models,"H2OAutoML") | inherits(models,"H2OGrid")) {
     ids <- h2o.get_ids(models)
   }
   else if (inherits(models,"autoEnsemble")) {
@@ -232,6 +216,9 @@ shapley <- function(models,
   }
   else if (inherits(models,"character")) {
     ids <- models
+  }
+  else {
+    stop("`models` must be an H2OAutoML, H2OGrid, autoEnsemble, or a character vector of model IDs.", call. = FALSE)
   }
 
   # Initiate the progress bar after identifying the ids
@@ -277,7 +264,7 @@ shapley <- function(models,
           model = model,
           newdata = newdata,
           top_n_features = top_n_features,
-          sample_size = nrow(newdata)
+          sample_size = sample_size
         )
       }
       else {
@@ -285,7 +272,7 @@ shapley <- function(models,
           model = model,
           newdata = newdata,
           columns = model@allparameters$x, #get SHAP for all predictors
-          sample_size = nrow(newdata)
+          sample_size = sample_size
         )
       }
 
@@ -324,7 +311,6 @@ shapley <- function(models,
   }
 
   # number of included_models must be higher than 1
-
   if (length(included_models) < n_models) stop("number of models that have met the minimum_performance criteria is too low")
 
   # Check that the sum of weights are larger than 1 to avoid negative variance computation
@@ -387,15 +373,29 @@ shapley <- function(models,
   # -------------------------------------------------------------
   for (j in UNQ) {
     # get all contribution columns for the j feature
-    tmp <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF)), FALSE]
-    weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
-    weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
-    weighted_sd   <- sqrt(weighted_var)
+    X <- ratioDF[ratioDF$feature == j, grep("^ratio", names(ratioDF)), FALSE]
+    X  <- as.numeric(X[1, ])   #get a numeric vector of contributions
+
+    # make sure x is numeric and performance (w) is non-negative
+    ok <- is.finite(X) & is.finite(w) & (w >= 0)
+    X <- X[ok]
+    w_ok <- w[ok]
+
+    weighted_mean <- weighted.mean(X, w_ok, na.rm = TRUE)
+
+    # Uses weights as given (NO scaling/normalization)
+    if (sum(w_ok) <= 1) {
+      weighted_sd <- NA_real_
+      ci <- NA_real_
+    } else {
+      weighted_var  <- sum(w_ok * (X - weighted_mean)^2, na.rm = TRUE)  /  (sum(w_ok, na.rm = TRUE) - 1)
+      weighted_sd   <- sqrt(weighted_var)
+    }
 
     # update the summaryShaps data frame
-    summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(tmp)
+    summaryShaps[summaryShaps$feature == j, "mean"] <- weighted_mean #mean(X)
     summaryShaps[summaryShaps$feature == j, "sd"] <- weighted_sd
-    summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(tmp))
+    summaryShaps[summaryShaps$feature == j, "ci"] <- 1.96 * weighted_sd / sqrt(length(X))
   }
 
   # Compute the lower and upper confidence intervals
@@ -421,37 +421,11 @@ shapley <- function(models,
   #???
   BASE$data <- BASE$data[order(BASE$data$Row.names), ]
   BASE$data$contribution <- data$contribution
-  BASE$labels$title <- "SHAP Mean Summary Plot\n"
+  BASE$labels$title <- "WMSHAP Summary Plot\n"
 
   # STEP 3: NORMALIZE the SHAP contributions and their CI
   # ============================================================
-  # the minimum contribution should not be normalized as zero. instead,
-  # it should be the ratio of minimum value to the maximum value.
-  # The maximum would be the highest mean + the highest CI
-
-  # if (normalize_to == "upperCI") {
-  #   max  <- max(summaryShaps$mean + summaryShaps$ci)
-  # }
-  # else {
-  #   max  <- max(summaryShaps$mean)
-  # }
-
-  # #??? I might still give the minimum value to be zero!
-  # min  <- 0 # min(summaryShaps$mean)/max
-  #
-  # summaryShaps$normalized_mean <- normalize(x = summaryShaps$mean,
-  #                                           min = min,
-  #                                           max = max)
-  #
-  # summaryShaps$normalized_ci <- normalize(x = summaryShaps$ci,
-  #                                         min = min,
-  #                                         max = max)
-  # compute relative shap values
-  # summaryShaps$shapratio <- summaryShaps$mean / sum(summaryShaps$mean)
-
-  # # compute lowerCI
-  # summaryShaps$lowerCI <- summaryShaps$normalized_mean - summaryShaps$normalized_ci
-  # summaryShaps$upperCI <- summaryShaps$normalized_mean + summaryShaps$normalized_ci
+  #???
 
   # STEP 4: Feature selection
   # ============================================================
