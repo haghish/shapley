@@ -1,18 +1,18 @@
-#' @title Weighted mean SHAP values computed at subject level
-#' @description Weighted mean of SHAP values and weighted SHAP confidence intervals
-#'              provide a measure of feature importance for a grid of fine-tuned models
-#'              or base-learners of a stacked ensemble model at subject level,
-#'              showing that how each feature influences the prediction made for
-#'              a row in the dataset and to what extend different models agree
-#'              on that effect. If the 95% confidence interval crosses the
-#'              vertical line at 0.00, then it can be concluded that the feature
-#'              does not significantly influences the subject, when variability
-#'              across models is taken into consideration.
-#' @param shapley object of class 'shapley', as returned by the 'shapley' function
-#' @param row_index subject or row number in a wide-format dataset to be visualized
-#' @param features character vector, specifying the feature to be plotted.
-#' @param plot logical. if TRUE, the plot is visualized.
-#' @param print logical. if TRUE, the WMSHAP summary table for the given row is printed
+#' @title WMSHAP row-level plot for a single observation (participant or data row)
+#' @description
+#' Computes and visualizes Weighted Mean SHAP contributions (WMSHAP) for a single row
+#' (subject/observation) across multiple models in a \code{shapley} object.
+#' For each feature, the function computes a weighted mean of row-level SHAP contributions
+#' across models using \code{shapley$weights} and reports an approximate 95% confidence
+#' interval summarizing variability across models.
+#' @param shapley object of class \code{"shapley"}, as returned by the 'shapley' function
+#' @param row_index Integer (length 1). The row/subject identifier to visualize. This is
+#'                  matched against the \code{index} column in \code{shapley$results}.
+#' @param features Optional character vector of feature names to plot. If \code{NULL},
+#'                 all available features in \code{shapley$results} are used.
+#' @param plot Logical. If \code{TRUE}, prints the plot.
+#' @param print Logical. If \code{TRUE}, prints the computed summary table for the row.
+#' @return a list including the GGPLOT2 object and the data frame of WMSHAP summary values.
 #' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom stats weighted.mean
 #' @importFrom h2o h2o.stackedEnsemble h2o.getModel h2o.auc h2o.aucpr h2o.r2
@@ -23,9 +23,6 @@
 #' @importFrom ggplot2 ggplot aes geom_col geom_errorbar coord_flip ggtitle xlab
 #'             ylab theme_classic theme scale_y_continuous margin expansion
 #'             geom_hline
-#' @author E. F. Haghish
-#' @return a list including the GGPLOT2 object, the data frame of SHAP values,
-#'         and performance metric of all models, as well as the model IDs.
 #' @examples
 #'
 #' \dontrun{
@@ -48,7 +45,7 @@
 #' ### can be computed for both types.
 #'
 #' #######################################################
-#' ### PREPARE AutoML Grid (takes a couple of minutes)
+#' ### EXAMPLE 1: PREPARE AutoML Grid (takes a couple of minutes)
 #' #######################################################
 #' # run AutoML to tune various models (GBM) for 60 seconds
 #' y <- "CAPSULE"
@@ -65,8 +62,10 @@
 #' result <- shapley(models = aml, newdata = prostate,
 #'                   performance_metric = "aucpr", plot = TRUE)
 #'
+#' shapley.row.plot(result, row_index = 11)
+#'
 #' #######################################################
-#' ### PREPARE H2O Grid (takes a couple of minutes)
+#' ### EXAMPLE 2: PREPARE H2O Grid (takes a couple of minutes)
 #' #######################################################
 #' # make sure equal number of "nfolds" is specified for different grids
 #' grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
@@ -80,8 +79,10 @@
 #' result2 <- shapley(models = grid, newdata = prostate,
 #'                    performance_metric = "aucpr", plot = TRUE)
 #'
+#' shapley.row.plot(result2, row_index = 9)
+#'
 #' #######################################################
-#' ### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
+#' ### EXAMPLE 3: PREPARE autoEnsemble STACKED ENSEMBLE MODEL
 #' #######################################################
 #'
 #' ### get the models' IDs from the AutoML and grid searches.
@@ -94,28 +95,26 @@
 #'                    performance_metric = "aucpr", plot = TRUE)
 #'
 #' #plot all important features
-#' shapley.row.plot(shapley, row_index = 11)
+#' shapley.row.plot(result3, row_index = 13)
 #'
 #' #plot only the given features
-#' shapPlot <- shapley.row.plot(shapley, row_index = 11, features = c("PSA", "AGE"))
+#' shapPlot <- shapley.row.plot(result3, row_index = 13, features = c("PSA", "AGE"))
 #'
-#' # inspect the computed data for the row 11
-#' ptint(shapPlot$rowSummarySHAP)
+#' # inspect the computed data for the row 13
+#' ptint(shapPlot$summary)
 #' }
+#' @author E. F. Haghish
 #' @export
 
 shapley.row.plot <- function(shapley,
                              row_index,
                              features = NULL,
                              plot = TRUE,
-                             print = FALSE
-) {
+                             print = FALSE) {
 
   # Variable definitions
   # ============================================================
-  w         <- shapley$weights
-  # COLORCODE <- c("#07B86B", "#07a9b8","#b86207","#b8b207", "#b80786",
-  #                "#073fb8", "#b8073c", "#8007b8", "#bdbdbd", "#4eb807")
+  w <- shapley$weights
 
   # Syntax check
   # ============================================================
@@ -197,6 +196,7 @@ shapley.row.plot <- function(shapley,
   if (plot) print(Plot)
   if (print) print(rowSummary)
 
-}
+  return(list(summary = rowSummary,
+              plot = Plot))
 
-# shapley.row.plot(shapley, row_index = 11, features = c("PSA", "AGE"))
+}
