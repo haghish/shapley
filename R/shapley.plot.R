@@ -1,38 +1,32 @@
-#' @title Plot weighted SHAP contributions
-#' @description This function applies different criteria to visualize SHAP contributions
-#' @param shapley object of class 'shapley', as returned by the 'shapley' function
-#' @param plot character, specifying the type of the plot, which can be either
-#'            'bar', 'waffle', or 'shap'. The default is 'bar'.
-#' @param method Character. The column name in \code{summaryShaps} used
-#'                           for feature selection. Default is \code{"mean"}, which
-#'                           selects important features which have weighted mean shap
-#'                           ratio (WMSHAP) higher than the specified cutoff. Other
-#'                           alternative is "lowerCI", which selects features which
-#'                           their lower bound of confidence interval is higher than
-#'                           the cutoff.
-#' @param cutoff numeric, specifying the cutoff for the method used for selecting
-#'               the top features.
-#' @param top_n_features Integer. If specified, the top n features with the
-#'                       highest weighted SHAP values will be selected, overrullung
-#'                       the 'cutoff' and 'method' arguments.
-#' @param features character vector, specifying the feature to be plotted.
-#' @param legendstyle character, specifying the style of the plot legend, which
-#'                    can be either 'continuous' (default) or 'discrete'. the
-#'                    continuous legend is only applicable to 'shap' plots and
-#'                    other plots only use 'discrete' legend.
-#' @param scale_colour_gradient character vector for specifying the color gradients
-#'                              for the plot.
-#' @param labels provide feature labels for items in the dataset. If specified,
-#'               feature descriptions will be shown in the plot instead of the
-#'               feature names as included in the dataset. To specify the labels,
-#'               use the \code{c} function and list the labes, e.g.,
-#'               \code{c(feature1 = label2, feature2 = label2, ...)}.
+#' @title Plot weighted mean SHAP (WMSHAP) contributions
+#' @description Visualizes WMSHAP summaries from a \code{shapley} object. Features can be selected
+#'              using \code{method} and \code{method/cutoff}, \code{top_n_features},
+#'              or explicit \code{features} to specify feature selection method.
+#' @param shapley object of class \code{"shapley"}, as returned by the 'shapley' function
+#' @param plot Character. One of \code{"bar"} or \code{"wmshap"}.
+#' @param method Character. One of \code{"mean"} or \code{"lowerCI"}; used by
+#'               \code{feature.selection()} for feature selection
+#'               when \code{top_n_features} or \code{features} are not set.
+#' @param cutoff Numeric cutoff for \code{method} selection.
+#' @param top_n_features Integer. If set, selects top N features by WMSHAP
+#'                       (overrides cutoff and method arguments).
+#' @param features Character vector, specifying the feature to be plotted
+#'                 (overrides cutoff and method arguments).
+#' @param legendstyle Character. For \code{plot = "wmshap"} only: \code{"continuous"} (default)
+#'                    or \code{"discrete"}.
+#' @param scale_colour_gradient Optional character vector of length 3, specifying
+#'                              color names: \code{c(low, mid, high)}.
+#'                              Used only when \code{plot = "wmshap"}.
+#' @param labels Optional named character vector mapping feature names to display labels.
+#'               To specify the labels, use the \code{c} function and for each feature,
+#'               provide a label. For example, \code{c(feature1 = label2, feature2 = label2, ...)}.
 # @importFrom waffle waffle
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
 #' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
 #'             margin element_text theme_classic labs ylab xlab ggtitle
+#'             coord_flip scale_y_continuous scale_x_discrete
 #' @author E. F. Haghish
-#' @return ggplot object
+#' @return A ggplot object
 #' @examples
 #'
 #' \dontrun{
@@ -76,7 +70,7 @@
 #' #######################################################
 #'
 #' shapley.plot(result, plot = "bar")
-# shapley.plot(result, plot = "waffle")
+#' shapley.plot(result, plot = "wmshap")
 #' }
 #' @export
 
@@ -97,8 +91,13 @@ shapley.plot <- function(shapley,
   if (!is.character(plot)) {
     stop("plot must be a character string")
   }
-  if (plot != "bar" & plot != "waffle" & plot != "shap") {
-    stop("plot must be either 'bar', 'waffle', or 'shap'")
+  # for syntax change on version 0.6
+  if (plot == "shap") {
+    plot <- "wmshap"
+    warning("plot = 'shap' is deprecated; use plot = 'wmshap'.", call. = FALSE)
+  }
+  if (plot != "bar" & plot != "wmshap") {
+    stop("plot must be either 'bar' or 'wmshap'")
   }
 
   # Feature selection
@@ -151,36 +150,36 @@ shapley.plot <- function(shapley,
       scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
   }
 
-  else if (plot == "waffle") {
+  # else if (plot == "waffle") {
+  #
+  #   # round_to_half <- function(x) {
+  #   #   return(round(x * 2) / 2)
+  #   # }
+  #   #
+  #   # # Calculate the percentages
+  #   # percentage <- round((mean / sum(mean) * 100), 2)
+  #   #
+  #   # shapratio <- round_to_half(shapratio*400)
+  #   #
+  #   # # Create a factor with the percentage for the legend
+  #   # legend <- paste0(features, " (", percentage, "%)")
+  #   # # Order the legend by descending percentage
+  #   # #legend <- factor(legend, levels = legend[order(-percentage)])
+  #   # names(shapratio) <- as.character(legend)
+  #   #
+  #   # colors <- NA
+  #   # if (length(shapratio) >= 9) {
+  #   #   color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+  #   #   colors <- sample(color, length(shapratio))
+  #   # }
+  #   #
+  #   # Plot <- waffle(shapratio, rows = 20, size = 1, colors = colors,
+  #   #                title = "Weighted mean SHAP contributions",
+  #   #                legend_pos = "right")
+  #   stop("due to an issue with the 'waffle' package on CRAN, this function is temporarily disabbled")
+  # }
 
-    # round_to_half <- function(x) {
-    #   return(round(x * 2) / 2)
-    # }
-    #
-    # # Calculate the percentages
-    # percentage <- round((mean / sum(mean) * 100), 2)
-    #
-    # shapratio <- round_to_half(shapratio*400)
-    #
-    # # Create a factor with the percentage for the legend
-    # legend <- paste0(features, " (", percentage, "%)")
-    # # Order the legend by descending percentage
-    # #legend <- factor(legend, levels = legend[order(-percentage)])
-    # names(shapratio) <- as.character(legend)
-    #
-    # colors <- NA
-    # if (length(shapratio) >= 9) {
-    #   color <- grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
-    #   colors <- sample(color, length(shapratio))
-    # }
-    #
-    # Plot <- waffle(shapratio, rows = 20, size = 1, colors = colors,
-    #                title = "Weighted mean SHAP contributions",
-    #                legend_pos = "right")
-    stop("due to an issue with the 'waffle' package on CRAN, this function is temporarily disabbled")
-  }
-
-  else if (plot == "shap") {
+  else if (plot == "wmshap") {
 
     # Make sure the features are in the correct order
     # ============================================================
@@ -237,7 +236,7 @@ shapley.plot <- function(shapley,
     }
   }
   else {
-    stop("plot must be either 'bar', 'waffle', or 'shap'")
+    stop("plot must be either 'bar' or 'wmshap'")
   }
 
   # Add the labels for features, if specified
