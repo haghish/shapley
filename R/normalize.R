@@ -9,9 +9,12 @@
 #' @author E. F. Haghish
 #' @return A numeric vector of the same length as \code{x}
 #' @examples
+#' \dontrun{
+#' # the function is not exported
 #' normalize(c(0, 5, 10))
 #' normalize(c(1, 1, 1))
 #' normalize(c(NA, 2, 3))
+#' }
 
 normalize <- function(x, min=NULL, max=NULL) {
 
