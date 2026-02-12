@@ -23,9 +23,12 @@ This function normalizes a vector based on specified minimum
              of the vector (ignoring missing values).
 }
 \examples{
+\dontrun{
+# the function is not exported
 normalize(c(0, 5, 10))
 normalize(c(1, 1, 1))
 normalize(c(NA, 2, 3))
+}
 }
 \author{
 E. F. Haghish
