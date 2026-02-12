@@ -2,10 +2,10 @@
 % Please edit documentation in R/shapley.table.R
 \name{shapley.table}
 \alias{shapley.table}
-\title{Create SHAP Summary Table Based on the Given Criterion}
+\title{Create WMSHAP Summary Table Based on the Given Criterion}
 \usage{
 shapley.table(
-  wmshap,
+  shapley,
   method = "mean",
   cutoff = 0.01,
   round = 3,
@@ -17,8 +17,8 @@ shapley.table(
 )
 }
 \arguments{
-\item{wmshap}{A wmshap object, returned by the shapley function
-containing a data frame \code{summaryShaps}.}
+\item{shapley}{A \code{shapley} object returned by \code{\link{shapley}} that contains
+a data frame \code{summaryShaps}.}
 
 \item{method}{Character. The column name in \code{summaryShaps} used
 for feature selection. Default is \code{"mean"}, which
@@ -61,16 +61,13 @@ If \code{markdown.table = TRUE}, returns a markdown table (invisibly)
         \code{markdown.table = FALSE}, returns a data frame with these columns.
 }
 \description{
-Generates a summary table of weighted mean SHAP (WMSHAP) values
-  and confidence intervals for each feature based on a weighted SHAP analysis.
-  The function filters the SHAP summary table (from a \code{wmshap} object) by
-  selecting features that meet or exceed a specified cutoff using a selection
-  method (default "mean", which is weighted mean shap ratio).
-  It then sorts the table by the mean SHAP value,
-  formats the SHAP values along with their 95\% confidence intervals into a single
-  string, and optionally adds human-readable feature descriptions from a provided
-  dictionary. The output is returned as a markdown table using the \pkg{pander}
-  package, or as a data frame if requested.
+#' Generates a summary table of weighted mean SHAP ratios (WMSHAP) and confidence intervals
+for each feature based on a weighted SHAP analysis. The function filters the SHAP summary
+table (from a \code{shapley} object) by selecting features that meet or exceed a specified
+cutoff using a selection method (default \code{"mean"}).
+
+The output is sorted by WMSHAP and formatted as either a markdown table (via \pkg{pander})
+or a data frame.
 }
 \examples{
 \dontrun{
@@ -124,7 +121,7 @@ grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
 result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
 
 # get the output as a Markdown table:
-md_table <- shapley.table(wmshap = result2,
+md_table <- shapley.table(shapley = result2,
                           method = "mean",
                           cutoff = 0.01,
                           round = 3,
