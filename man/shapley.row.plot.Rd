@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapley.row.plot.R
 \name{shapley.row.plot}
 \alias{shapley.row.plot}
-\title{Weighted mean SHAP values computed at subject level}
+\title{WMSHAP row-level plot for a single observation (participant or data row)}
 \usage{
 shapley.row.plot(
   shapley,
@@ -13,30 +13,27 @@ shapley.row.plot(
 )
 }
 \arguments{
-\item{shapley}{object of class 'shapley', as returned by the 'shapley' function}
+\item{shapley}{object of class \code{"shapley"}, as returned by the 'shapley' function}
 
-\item{row_index}{subject or row number in a wide-format dataset to be visualized}
+\item{row_index}{Integer (length 1). The row/subject identifier to visualize. This is
+matched against the \code{index} column in \code{shapley$results}.}
 
-\item{features}{character vector, specifying the feature to be plotted.}
+\item{features}{Optional character vector of feature names to plot. If \code{NULL},
+all available features in \code{shapley$results} are used.}
 
-\item{plot}{logical. if TRUE, the plot is visualized.}
+\item{plot}{Logical. If \code{TRUE}, prints the plot.}
 
-\item{print}{logical. if TRUE, the WMSHAP summary table for the given row is printed}
+\item{print}{Logical. If \code{TRUE}, prints the computed summary table for the row.}
 }
 \value{
-a list including the GGPLOT2 object, the data frame of SHAP values,
-        and performance metric of all models, as well as the model IDs.
+a list including the GGPLOT2 object and the data frame of WMSHAP summary values.
 }
 \description{
-Weighted mean of SHAP values and weighted SHAP confidence intervals
-             provide a measure of feature importance for a grid of fine-tuned models
-             or base-learners of a stacked ensemble model at subject level,
-             showing that how each feature influences the prediction made for
-             a row in the dataset and to what extend different models agree
-             on that effect. If the 95% confidence interval crosses the
-             vertical line at 0.00, then it can be concluded that the feature
-             does not significantly influences the subject, when variability
-             across models is taken into consideration.
+Computes and visualizes Weighted Mean SHAP contributions (WMSHAP) for a single row
+(subject/observation) across multiple models in a \code{shapley} object.
+For each feature, the function computes a weighted mean of row-level SHAP contributions
+across models using \code{shapley$weights} and reports an approximate 95% confidence
+interval summarizing variability across models.
 }
 \examples{
 
@@ -60,7 +57,7 @@ set.seed(10)
 ### can be computed for both types.
 
 #######################################################
-### PREPARE AutoML Grid (takes a couple of minutes)
+### EXAMPLE 1: PREPARE AutoML Grid (takes a couple of minutes)
 #######################################################
 # run AutoML to tune various models (GBM) for 60 seconds
 y <- "CAPSULE"
@@ -77,8 +74,10 @@ aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
 result <- shapley(models = aml, newdata = prostate,
                   performance_metric = "aucpr", plot = TRUE)
 
+shapley.row.plot(result, row_index = 11)
+
 #######################################################
-### PREPARE H2O Grid (takes a couple of minutes)
+### EXAMPLE 2: PREPARE H2O Grid (takes a couple of minutes)
 #######################################################
 # make sure equal number of "nfolds" is specified for different grids
 grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
@@ -92,8 +91,10 @@ grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
 result2 <- shapley(models = grid, newdata = prostate,
                    performance_metric = "aucpr", plot = TRUE)
 
+shapley.row.plot(result2, row_index = 9)
+
 #######################################################
-### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
+### EXAMPLE 3: PREPARE autoEnsemble STACKED ENSEMBLE MODEL
 #######################################################
 
 ### get the models' IDs from the AutoML and grid searches.
@@ -106,13 +107,13 @@ result3 <- shapley(models = autoSearch, newdata = prostate,
                    performance_metric = "aucpr", plot = TRUE)
 
 #plot all important features
-shapley.row.plot(shapley, row_index = 11)
+shapley.row.plot(result3, row_index = 13)
 
 #plot only the given features
-shapPlot <- shapley.row.plot(shapley, row_index = 11, features = c("PSA", "AGE"))
+shapPlot <- shapley.row.plot(result3, row_index = 13, features = c("PSA", "AGE"))
 
-# inspect the computed data for the row 11
-ptint(shapPlot$rowSummarySHAP)
+# inspect the computed data for the row 13
+ptint(shapPlot$summary)
 }
 }
 \author{
