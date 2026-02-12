@@ -1,5 +1,5 @@
 
-> - __Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP for Feature Assessment in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>    
+> - __Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP (WMSHAP) for Feature Assessment in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>    
 - - -
 
 
