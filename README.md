@@ -95,17 +95,6 @@ shapley.plot(result, plot = "bar")
 
 <img src='man/figures/bar.png' align="center" height="400" />
 
-### Waffle plot of important features based on weighted mean SHAP values
-
-Another type of plot, that is also useful for identifying important features is 
-__`waffle`__ plot, by default showing any feature that at least has contributed 
-0.25% to the overall explained SHAP values across features. 
-
-```r
-shapley.plot(result, plot = "waffle")
-```
-
-<img src='man/figures/waffle.jpg' align="center" height="400" />
 
 ### Mean SHAP contribution plot of important features based on weighted mean SHAP values
 
