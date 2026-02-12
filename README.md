@@ -190,8 +190,6 @@ Traditionally, the selection of a set number of significant features based on th
 
 However, the calculation of weighted means and 95% confidence intervals allows for a systematic approach to identify features that consistently contribute to the model, across different models. For instance, the default method in the `shapley` package considers features important if their weighted mean shap ration exceeds the specified cutoff. Another alternative is "`lowerCI`", which selects features that their lower bound of their weighted 95% confidence interval for the WMSHAP exceeds the cutoff. This means any feature with a stable relative contribution above the cutoff is deemed important. This method is also utilized in the `bar` plot, where features are ranked by their weighted mean SHAP values, and the cutoff is applied to the lower confidence interval. 
 
-This is demonstrated in the `waffle` plot, where features must contribute at least 0.5% to the overall weighted mean SHAP values to be selected.
-
 Between the "`lowerCI`" and "`mean`" methods, each has merits and limitations. "`LowerCI`" is more conservative, while "`mean`" focuses on the weighted mean shap ratios. 
 
 In this regard, the package also suggests a function for testing different criteria. Currently, implementing only `lowerCI` and `mean` criteria. following the examples above, the __`shapley.top`__ shows features that pass 
