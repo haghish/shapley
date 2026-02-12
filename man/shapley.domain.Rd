@@ -24,6 +24,8 @@ each element value is a character vector of feature names assigned to that domai
 \item{print}{Logical. If TRUE, prints the domain WMSHAP summary table.}
 
 \item{colorcode}{Character vector for specifying the color names for each domain in the plot.}
+
+\item{xlab}{Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")}
 }
 \value{
 A list with:
