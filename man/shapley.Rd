@@ -2,8 +2,8 @@
 % Please edit documentation in R/shapley.R
 \name{shapley}
 \alias{shapley}
-\title{Weighted Mean SHAP Ratio and Confidence Interval for a ML Grid
-       of Fine-Tuned Models or Base-Learners of a Stacked Ensemble Model}
+\title{Weighted Mean SHAP (WMSHAP) and Confidence Interval for Multiple Models
+       (tuning grid, stacked ensemble, etc.)}
 \usage{
 shapley(
   models,
@@ -17,93 +17,92 @@ shapley(
   cutoff = 0.01,
   top_n_features = NULL,
   n_models = 10,
-  sample_size = nrow(newdata)
+  sample_size = NULL
 )
 }
 \arguments{
-\item{models}{h2o search grid, autoML grid, or a character vector of H2O model IDs.}
+\item{models}{An H2O AutoML object, H2O grid object, \code{autoEnsemble} object,
+or a character vector of H2O model IDs.}
 
-\item{newdata}{An \code{h2o} frame (or \code{data.frame}) already uploaded to the
-\code{h2o} server. This data will be used for computing SHAP
-contributions for each model, alongside model's performance
-weights.}
+\item{newdata}{An \code{H2OFrame} (i.e., a \code{data.frame}) already uploaded to the
+\code{h2o} server. SHAP contributions are computed on this data.}
 
-\item{plot}{logical. if TRUE, the weighted mean and confidence intervals of
-the SHAP values are plotted. The default is TRUE.}
+\item{plot}{Logical. If \code{TRUE}, plots the WMSHAP summary (via \code{shapley.plot()}).}
 
-\item{performance_metric}{Character specifying which performance metric to use
-as weights. The default is \code{"r2"}, which can
-be used for both regression and classification.
-For binary classification, other options include:
-\code{"aucpr"} (area under the precision-recall curve),
-\code{"auc"} (area under the ROC curve),
-and \code{"f2"} (F2 score).}
+\item{performance_metric}{Character. Performance metric used to weight models.
+Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
+(classification metrics).}
 
-\item{standardize_performance_metric}{Logical, indicating whether to standardize
-the performance metric used as weights so
-their sum equals the number of models. The
-default is \code{FALSE}.}
+\item{standardize_performance_metric}{Logical. If \code{TRUE}, rescales model weights so
+the weights sum to the number of included models.
+The default is \code{FALSE}.}
 
-\item{performance_type}{Character. Specify which performance metric should be
-reported: \code{"train"} for training data, \code{"valid"}
+\item{performance_type}{Character. Specify which performance metric performance estimate to use:
+ \code{"train"} for training data, \code{"valid"}
 for validation, or \code{"xval"} for cross-validation (default).}
 
 \item{minimum_performance}{Numeric. Specify the minimum performance metric
-for a model to be included in calculating weighted
-mean SHAP ratio Models below this threshold receive
-zero weight. The default is \code{0}.}
+for a model to be included in calculating WMSHAP.
+Models below this threshold receive
+zero weight and are excluded. The default is \code{0}.
+Specifying a minimum performance can be used to compute
+WMSHAP for a set of competitive models.}
 
 \item{method}{Character. Specify the method for selecting important features
-based on their weighted mean SHAP ratios. The default is
-\code{"mean"}, which selects features whose weighted mean shap ratio (WMSHAP)
+based on their WMSHAP. The default is
+\code{"mean"}, which selects features whose WMSHAP
 exceeds the \code{cutoff}. The alternative is
 \code{"lowerCI"}, which selects features whose lower bound of confidence
 interval exceeds the \code{cutoff}.}
 
-\item{cutoff}{numeric, specifying the cutoff for the method used for selecting
-the top features.}
+\item{cutoff}{Numeric. Cutoff applied by \code{method} for selecting important features.}
 
-\item{top_n_features}{integer. if specified, the top n features with the
-highest weighted SHAP values will be selected, overrullung
-the 'cutoff' and 'method' arguments. specifying top_n_feature
-is also a way to reduce computation time, if many features
-are present in the data set. The default is NULL, which means
-the shap values will be computed for all features.}
+\item{top_n_features}{Integer or \code{NULL}. If not \code{NULL}, restricts SHAP computation to the
+top N features per model (reduces runtime). This also selects the top N features by WMSHAP
+in the returned \code{selectedFeatures}.}
 
-\item{n_models}{minimum number of models that should meet the 'minimum_performance'
-criterion in order to compute WMSHAP and CI. If the intention
-is to compute global summary SHAP values (at feature level) for
-a single model, set n_models to 1. The default is 10.}
+\item{n_models}{Integer. Minimum number of models that must meet the performance threshold
+for WMSHAP and CI computation. Use \code{1} to compute summary SHAP for a single model.
+The default is 10.}
 
-\item{sample_size}{integer. number of rows in the \code{newdata} that should
-be used for SHAP assessment. By default, all rows are used,
-which is the recommended procedure for scientific analyses.
-However, SHAP analysis is time consuming and in the process
-of code development, lower values can be used for quicker
-shapley analyses.}
+\item{sample_size}{Integer. Number of rows in \code{newdata} used for SHAP assessment.
+Defaults to all rows. Reducing this can speed up development runs.}
 }
 \value{
-a list including the GGPLOT2 object, the data frame of SHAP values,
-        and performance metric of all models, as well as the model IDs.
+An object of class \code{"shapley"} (a named list) containing:
+\describe{
+  \item{ids}{Character vector of model IDs originally supplied or extracted.}
+  \item{included_models}{Character vector of model IDs included after filtering by performance.}
+  \item{ignored_models}{Data frame of excluded models and their performance.}
+  \item{weights}{Numeric vector of model weights (performance metrics) for included models.}
+  \item{results}{Data frame of row-level SHAP contributions merged across models.}
+  \item{summaryShaps}{Data frame of feature-level WMSHAP means and confidence intervals.}
+  \item{selectedFeatures}{Character vector of selected important features.}
+  \item{feature_importance}{List of per-feature absolute contribution summaries by model.}
+  \item{contributionPlot}{A ggplot-like object returned by \code{h2o.shap_summary_plot()}
+        used for the WMSHAP (“wmshap”) style plot.}
+  \item{plot}{A ggplot object (bar plot) if \code{plot = TRUE}, otherwise \code{NULL}.}
+}
 }
 \description{
-Calculates weighted mean SHAP ratios and confidence intervals to assess feature importance
-across a collection of models (e.g., a grid of fine-tuned models or base-learners
-in a stacked ensemble). Rather than reporting relative SHAP contributions for
-only a single model, this function accounts for variability in feature importance
-across multiple models. Each model's performance metric is used as a weight.
-The function also provides a plot of weighted SHAP values with confidence intervals.
+Computes Weighted Mean SHAP ratios (WMSHAP) and confidence intervals to assess feature
+importance across a collection of models (e.g., an H2O grid/AutoML leaderboard or
+base-learners of an ensemble). Instead of reporting SHAP contributions for a single model,
+this function summarizes feature importance across multiple models and weights each model
+by a chosen performance metric.
 Currently, only models trained by the \code{h2o} machine learning platform,
 \code{autoEnsemble}, and the \code{HMDA} R packages are supported.
 }
 \details{
 The function works as follows:
    \enumerate{
-     \item SHAP contributions are computed at the individual level (row) for each model for the given "newdata".
-     \item Each model's feature-level SHAP ratios (i.e., share of total SHAP) are computed.
-     \item The performance metrics of the models are used as weights.
-     \item Using the weights vector and shap ratio of features for each model,
-           the weighted mean SHAP ratios and their confidence intervals are computed.
+     \item For each model, SHAP contributions are computed on \code{newdata}.
+     \item For each model, feature-level absolute SHAP contributions are aggregated and
+           converted to a \emph{ratio} (share of total absolute SHAP across features).
+     \item Models are weighted by a performance metric (e.g., \code{"r2"} for regression or
+           \code{"auc"} / \code{"aucpr"} for classification).
+     \item The weighted mean SHAP ratio (WMSHAP) is computed for each feature, along with an
+           confidence interval across models.
    }
 }
 \examples{
