@@ -242,7 +242,6 @@ shapley.domain <- function(shapley,
     uci <- SUMMARY$upperCI
   }
 
-
   # Bar plot at DOMAIN level
   # ============================================================
   if (plot & !is.null(domains) ) {
