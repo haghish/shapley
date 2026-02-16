@@ -98,7 +98,7 @@ shapley.domain.test <- function(shapley, domains, n = 2000) {
 
   } else {
     message(paste0("The difference between the two domains is not significant:\n",
-                   "observed Weighted Mean Shapley (WMSHAP) difference =",
+                   "observed Weighted Mean Shapley (WMSHAP) difference = ",
                    as.character(results$mean_wmshap_diff), " and p-value = ",
                    as.character(results$p_value)))
   }
