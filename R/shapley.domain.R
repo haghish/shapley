@@ -13,8 +13,9 @@
 #' @param xlab Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")
 #' @importFrom stats na.omit aggregate formula
 #' @importFrom h2o h2o.shap_summary_plot h2o.getModel
-#' @importFrom ggplot2 scale_colour_gradient2 theme guides guide_legend guide_colourbar
-#'             margin element_text theme_classic labs ylab xlab ggtitle
+#' @importFrom ggplot2 theme guides guide_legend guide_colourbar
+#'             margin theme_classic ylab xlab ggtitle
+#'
 #' @author E. F. Haghish
 #' @return A list with:
 #' \describe{
