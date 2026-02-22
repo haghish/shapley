@@ -7,7 +7,9 @@
 shapley.row.plot(
   shapley,
   row_index,
+  top_n_features = NULL,
   features = NULL,
+  nonzeroCI = FALSE,
   plot = TRUE,
   print = FALSE
 )
@@ -18,8 +20,17 @@ shapley.row.plot(
 \item{row_index}{Integer (length 1). The row/subject identifier to visualize. This is
 matched against the \code{index} column in \code{shapley$results}.}
 
+\item{top_n_features}{Integer. If specified, the top n features with the
+highest weighted SHAP values will be selected. This
+will be overrulled by the 'features' argument.}
+
 \item{features}{Optional character vector of feature names to plot. If \code{NULL},
-all available features in \code{shapley$results} are used.}
+all available features in \code{shapley$results} are used.
+Specifying the \code{features} argument will override the
+\code{top_n_features} argument.}
+
+\item{nonzeroCI}{Logical. If \code{TRUE}, it avoids ploting features that have
+a confidence interval crossing zero.}
 
 \item{plot}{Logical. If \code{TRUE}, prints the plot.}
 
@@ -92,6 +103,8 @@ result2 <- shapley(models = grid, newdata = prostate,
                    performance_metric = "aucpr", plot = TRUE)
 
 shapley.row.plot(result2, row_index = 9)
+shapley.row.plot(result2, row_index = 9, nonzeroCI = TRUE)
+shapley.row.plot(result2, row_index = 9, top_n_features = 10)
 
 #######################################################
 ### EXAMPLE 3: PREPARE autoEnsemble STACKED ENSEMBLE MODEL
