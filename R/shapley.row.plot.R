@@ -8,8 +8,15 @@
 #' @param shapley object of class \code{"shapley"}, as returned by the 'shapley' function
 #' @param row_index Integer (length 1). The row/subject identifier to visualize. This is
 #'                  matched against the \code{index} column in \code{shapley$results}.
+#' @param top_n_features Integer. If specified, the top n features with the
+#'                       highest weighted SHAP values will be selected. This
+#'                       will be overrulled by the 'features' argument.
 #' @param features Optional character vector of feature names to plot. If \code{NULL},
 #'                 all available features in \code{shapley$results} are used.
+#'                 Specifying the \code{features} argument will override the
+#'                 \code{top_n_features} argument.
+#' @param nonzeroCI Logical. If \code{TRUE}, it avoids ploting features that have
+#'                  a confidence interval crossing zero.
 #' @param plot Logical. If \code{TRUE}, prints the plot.
 #' @param print Logical. If \code{TRUE}, prints the computed summary table for the row.
 #' @return a list including the GGPLOT2 object and the data frame of WMSHAP summary values.
@@ -80,6 +87,8 @@
 #'                    performance_metric = "aucpr", plot = TRUE)
 #'
 #' shapley.row.plot(result2, row_index = 9)
+#' shapley.row.plot(result2, row_index = 9, nonzeroCI = TRUE)
+#' shapley.row.plot(result2, row_index = 9, top_n_features = 10)
 #'
 #' #######################################################
 #' ### EXAMPLE 3: PREPARE autoEnsemble STACKED ENSEMBLE MODEL
@@ -108,7 +117,9 @@
 
 shapley.row.plot <- function(shapley,
                              row_index,
+                             top_n_features = NULL,
                              features = NULL,
+                             nonzeroCI = FALSE,
                              plot = TRUE,
                              print = FALSE) {
 
@@ -139,10 +150,10 @@ shapley.row.plot <- function(shapley,
     lowerCI = NA,
     upperCI = NA)
 
-  #index   <- substr(results$Row.names, 1, nchar(rowname)) == rowname
   results <- results[results$index == row_index, ]
 
   # compute WMSHAP for the row
+  # ============================================================
   for (j in UNQ) {
     tmp <- results[results$feature == j,
                            grep("^contribution", names(results))]
@@ -162,7 +173,22 @@ shapley.row.plot <- function(shapley,
     rowSummary[rowSummary$feature == j, "upperCI"] <- weighted_mean + ci
   }
 
-  ftr <- rowSummary$feature #FEATURES
+  # subset the row
+  # ============================================================
+  if (!is.null(top_n_features) & is.null(features)) {
+    rowSummary <- rowSummary[order(abs(rowSummary$mean), decreasing = TRUE), ]
+    rowSummary <- rowSummary[1:top_n_features, ]
+  }
+
+  # make sure that both lower and upper bounds of the confidence interval are on the same side of zero
+  if (nonzeroCI) {
+    onedirection <- (rowSummary$lowerCI > 0 & rowSummary$upperCI > 0) | (rowSummary$lowerCI < 0 & rowSummary$upperCI < 0)
+    rowSummary <- rowSummary[onedirection, ]
+  }
+
+  # PLOT
+  # ============================================================
+  ftr <- rowSummary$feature
   MEAN <- rowSummary$mean
   lci <- rowSummary$lowerCI
   uci <- rowSummary$upperCI
