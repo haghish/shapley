@@ -1,5 +1,7 @@
 
-> - __Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP (WMSHAP) for Feature Assessment in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>    
+> - __Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP (WMSHAP) for Feature Assessment in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>
+> - __Abstract__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP)_. URL:<https://doi.org/10.5281/zenodo.21920982>
+> - __Article__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP): A Near-Optimal Model-Set Approach to Feature Importance Assessment_. URL: <https://doi.org/10.13140/RG.2.2.24960.19203>
 - - -
 
 
@@ -17,7 +19,7 @@
 
 ## Introduction
 
-The `shapley` R package addresses a significant limitation in _exploratory_ machine learning research by providing a method to calculate the _weighted mean ratio_ and confidence intervals of __SHapley Additive exPlanations__, commonly known as __SHAP values__ across machine learning grids and stacked ensemble models. This approach enhances the stability and reliability of SHAP values, making the determination of important features more transparent and potentially more reproducible. Traditionally, the focus has been on reporting SHAP values from a single  'best' model, which can be problematic under conditions of severe class imbalance, where a universally accepted 'best' model may not exist. In addition, models with different parameters, might result in different evaluations of SHAP contributions and such variablity is also meaningful for researchers who wish to understand important features relevant to a model. In other words, SHAP values are unstable and varry across models, a limitation that is often overlooked in the literature by reporting the SHAP contributions of the 'best' model. In such scenarios, the SHAP values from a single model may not be representative of other models. The `shapley` package fills a critical gap by proposing methodology and enabling the computation of SHAP values for multiple machine learning models such as a fine-tuning grid search, and stacked ensemble models. This method computes weighted mean SHAP contributions, considering the performance of the model, to compute more stable SHAP values that also reflect of the variations across models. 
+The `shapley` R package addresses improves accuracy, robustness, and stability of feature importance assessments by computing __Weighted Mean SHapley Additive exPlanations (WMSHAP)__ values, for a set of near-optimal models or across machine learning grids and stacked ensemble models. This approach enhances the accuracy and stability of SHAP values computed from the best-performing model ([see the simulation study](<https://doi.org/10.13140/RG.2.2.24960.19203>)), making the determination of important features more transparent and potentially more reproducible. Traditionally, the focus has been on reporting SHAP values from a single  'best' model, which can be problematic because near-optimal models do not necessarily agree on SHAP assessments and such disagreements have been largely neglected. 
 
 ### Limitations in Current Machine Learning Research
 
