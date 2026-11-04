@@ -9,110 +9,63 @@ shapley(
   newdata,
   background_data = NULL,
   pred_fun = NULL,
-  plot = TRUE,
   performance_metric = "r2",
-  standardize_performance_metric = FALSE,
-  performance_type = "xval",
-  minimum_performance = 0,
-  method = "mean",
-  cutoff = 0.01,
-  top_n_features = NULL,
-  n_models = 2,
-  sample_size = NULL,
-  shap_backend = "auto",
+  backend = "kernelshap",
   model_performance = NULL,
+  sample_size = NULL,
+  n_core = -1L,
+  cutoff = 0,
+  plot = TRUE,
+  top_n_features = NULL,
   target_class = NULL,
-  shapr_approach = "empirical",
-  shapr_phi0 = NULL,
-  shapr_n_MC_samples = 1000L,
-  n_core = -1L
+  shapr_method = "empirical",
+  ...
 )
 }
 \arguments{
-\item{models}{An H2O AutoML object, H2O grid object, \code{autoEnsemble} object,
-a character vector of H2O model IDs, a fitted R model, or a named list of models.}
+\item{models}{A model, which can be a fitted R model, a named list of models,
+an H2O AutoML object, H2O grid object, \code{autoEnsemble} object,
+              a character vector of H2O model IDs. a wide range of R models are supported.}
 
-\item{newdata}{An \code{H2OFrame} for H2O models, or a data frame containing predictors
-for other models. SHAP contributions are computed on these observations.}
+\item{newdata}{A data frame (for R models) or an \code{H2OFrame} (for H2O models),
+SHAP and WMSHAP contributions are computed on these observations.}
 
 \item{background_data}{Data frame containing reference observations.
 Internally passed as \code{data} to \code{treeshap::unify()},
 \code{bg_X} to \code{kernelshap::kernelshap()}, and
-\code{x_train} to \code{shapr::explain()}.
-The native GPBoost backend does not use \code{background_data}.
-A common representative training subset is recommended for multiple models.}
+\code{x_train} to \code{shapr::explain()}. This argument is not needed
+for models trained with 'h2o' or 'gpboost' packages. background_data can be
+the training set with predictor columns only.}
 
 \item{pred_fun}{Optional prediction function of the form
-\code{function(model, newdata)}. Kernel SHAP accepts multiple outputs;
-shapr requires one numeric prediction per observation, selected using
-\code{target_class} when necessary.}
-
-\item{plot}{Logical. If \code{TRUE}, plots the WMSHAP summary using \code{shapley.plot()}.}
+\code{function(model, newdata)}. kernelshap package accepts multiple outputs;
+shapr package requires one numeric prediction per observation, selected using
+\code{target_class} when necessary. This argument is ignored for models trained
+with 'h2o' package, or when the 'treeshap' package is defined as the backend.}
 
 \item{performance_metric}{Character. Performance metric used to weight models.
 Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
 (classification metrics).}
 
-\item{standardize_performance_metric}{Logical. Retained for compatibility.
-Both H2O and other models now use the same normalized performance weights,
-regardless of this argument. The default is \code{FALSE}.}
-
-\item{performance_type}{Character. Specify which performance estimate to use:
- \code{"train"} for training data, \code{"valid"}
-for validation, or \code{"xval"} for cross-validation (default).
-Applies to H2O models; for other models supply \code{model_performance}.}
-
-\item{minimum_performance}{Numeric. Minimum performance metric
-for a model to be included in calculating WMSHAP.
-Models below this threshold are excluded. The default is \code{0}.}
-
-\item{method}{Character. Method for selecting important features based on WMSHAP.
-The default is \code{"mean"}; the alternative is \code{"lowerCI"}.}
-
-\item{cutoff}{Numeric. Cutoff applied by \code{method} for selecting important features.}
-
-\item{top_n_features}{Integer or \code{NULL}. If specified, select the top N features.
-All features are used to compute global importance ratios;
-this argument controls feature selection afterwards.}
-
-\item{n_models}{Integer. Minimum number of included models for WMSHAP.
-Must be at least \code{2}; the default is \code{10}. Models that do not
-meet \code{minimum_performance} are excluded from this count.}
-
-\item{sample_size}{Integer. Number of rows in \code{newdata} used for SHAP assessment.
-Defaults to all rows. Reducing this can speed up development runs.}
-
-\item{shap_backend}{Character. The default \code{"auto"} selects H2O for
-H2O models, native \code{gpboost} SHAP for \code{gpb.Booster} models,
-\code{treeshap} for compatible tree models, and
-\code{kernelshap} otherwise. If different non-H2O model classes would
-require different methods, \code{kernelshap} is used for all models.
-Specify \code{"h2o"}, \code{"gpboost"}, \code{"treeshap"},
-\code{"kernelshap"}, or \code{"shapr"} to select one method.
-The GPBoost and shapr packages are installed separately when needed.
-Native GPBoost SHAP explains
-only the boosted-tree component, excluding Gaussian-process and random effects.}
+\item{backend}{Character. Specifies the backend used to compute SHAP values.
+Available options are \code{"kernelshap"} (default), \code{"h2o"} (only for h2o models),
+\code{"gpboost"} (only for gpboost models), \code{"treeshap"}, and
+\code{"shapr"}. Each backend uses a different method to estimate SHAP
+values. The \code{gpboost} and
+\code{shapr} packages are optional dependencies that must be installed
+separately. Native GPBoost SHAP values explain only the boosted-tree
+component, excluding Gaussian-process and random effects.
+Note that these backends compute SHAP values in different ways.}
 
 \item{model_performance}{Named numeric vector containing one model performance
 estimate per non-H2O model. Use comparable cross-validation estimates,
-such as AUCPR, for all models. Names should correspond to model list names.}
+such as AUCPR, for all models. Names should correspond to model list names
+(see the examples).}
 
-\item{target_class}{Name or index of the prediction class to explain for
-models returning more than one prediction per observation. The second
-class is used by default in binary classification.}
-
-\item{shapr_approach}{Character. Feature-dependence approach used by
-\code{shapr::explain()}. The default is \code{"empirical"}. Specify
-\code{"independence"} when a marginal explanation is desired.
-Other approaches supported by shapr can also be specified.}
-
-\item{shapr_phi0}{Optional numeric baseline prediction supplied as
-\code{phi0} to \code{shapr::explain()}. By default, it is the mean of
-model predictions on \code{background_data}. May be a named vector
-with one baseline per model.}
-
-\item{shapr_n_MC_samples}{Positive integer. Number of Monte Carlo samples
-passed to \code{shapr::explain()}; the default is 1000.}
+\item{sample_size}{Integer. Number of rows in \code{newdata} used for SHAP assessment.
+                 Defaults to all rows. Reducing this can speed up development runs.
+                 Note that for 'shapr' package, this argument defines of Monte Carlo samples
+passed to \code{shapr::explain()}.}
 
 \item{n_core}{Integer. Number of parallel R workers for computing SHAP
 contributions across fitted models. The default \code{-1} uses all
@@ -120,6 +73,35 @@ detected physical CPU cores, limited to the number of models. Use
 \code{1} for sequential computation or a positive integer for a fixed
 number of workers. Each worker explains one model at a time. This
 argument does not control internal parallelism in the SHAP backends.}
+
+\item{cutoff}{Numeric. WMSHAP mean cutoff used to identify and select important
+features. The recommended default is 1 divided by the number of predictors
+in the model.}
+
+\item{plot}{Logical. If \code{TRUE}, plots the WMSHAP summary using \code{shapley.plot()}.}
+
+\item{top_n_features}{Integer or \code{NULL}. If specified, select the top N features.
+All features are used to compute global importance ratios;
+this argument controls feature selection afterwards.}
+
+\item{target_class}{Name or index of the prediction class to explain for
+models returning more than one prediction per observation. The second
+class is used by default in binary classification.}
+
+\item{shapr_method}{Character vector. Method used by
+\code{shapr::explain()} to estimate feature contributions.
+Available methods are \code{"empirical"}, \code{"gaussian"},
+\code{"copula"}, \code{"ctree"}, \code{"arf"},
+\code{"vaeac"}, \code{"categorical"}, \code{"independence"},
+\code{"timeseries"}, \code{"regression_separate"}, and
+\code{"regression_surrogate"}. The default is
+\code{"empirical"}.}
+
+\item{...}{arguments that are used internally for compatibility with older
+versions}
+
+\item{method}{Character. Method for selecting important features based on WMSHAP.
+The default is \code{"mean"}; the alternative is \code{"lowerCI"}.}
 }
 \value{
 An object of class \code{"shapley"} (a named list) containing:
@@ -144,23 +126,16 @@ An object of class \code{"shapley"} (a named list) containing:
 }
 \description{
 Computes Weighted Mean SHAP ratios (WMSHAP) and confidence intervals to assess feature
-importance across a collection of models (e.g., an H2O grid/AutoML leaderboard or
-base-learners of an ensemble). Instead of reporting SHAP contributions for a single model,
-this function summarizes feature importance across multiple models and weights each model
-by a chosen performance metric.
+importance across a set of near-optimal models. Instead of reporting SHAP
+contributions for a single model, this function summarizes feature importance
+across multiple models and weights each model by a chosen performance metric.
 Models trained by the \code{h2o} machine learning platform use the native H2O procedure.
 Other models can be explained using \code{treeshap}, \code{kernelshap},
 \code{shapr}, or the native \code{gpboost} SHAP method.
-H2O, TreeSHAP, and Kernel SHAP are installed with SHAPLEY. GPBoost and
-shapr are optional packages, required only when their methods are used.
 }
 \details{
-When \code{shap_backend = "auto"}, SHAPLEY uses the H2O backend for H2O
-models, native GPBoost tree contributions for \code{gpb.Booster} models
-(requires the optional \code{gpboost} package),
-TreeSHAP for compatible tree models, and Kernel SHAP for models
-not supported by TreeSHAP. If the near-optimal set contains models requiring
-different non-H2O backends, Kernel SHAP is used for all included models
+If the near-optimal set contains models requiring
+different non-H2O backends, kernelshap is used for all included models
 to maintain a common calculation method. The \code{shapr} backend can be
 selected explicitly to calculate dependence-aware SHAP values; it requires
 installing the optional \code{shapr} package.
@@ -170,7 +145,7 @@ installing the optional \code{shapr} package.
      \item For each model, SHAP contributions are computed on \code{newdata}.
      \item For each model, feature-level absolute SHAP contributions are aggregated and
            converted to a \emph{ratio} (share of total absolute SHAP across features).
-     \item Models are weighted by a performance metric (e.g., \code{"r2"} for regression or
+     \item Models are weighted by a normalized performance metric (e.g., \code{"r2"} for regression or
            \code{"auc"} / \code{"aucpr"} for classification).
      \item The weighted mean SHAP ratio (WMSHAP) is computed for each feature, along with an
            interval across models.
@@ -292,9 +267,8 @@ result_tree <- shapley(
   background_data = train[, predictors],
   model_performance = cv_aucpr,
   performance_metric = "aucpr",
-  shap_backend = "treeshap",
+  backend = "treeshap",
   target_class = "1",
-  n_models = 2,
   plot = TRUE
 )
 
@@ -311,10 +285,9 @@ result_kernel <- shapley(
   background_data = train[, predictors],
   model_performance = cv_aucpr,
   performance_metric = "aucpr",
-  shap_backend = "kernelshap",
+  backend = "kernelshap",
   pred_fun = pred_fun,
   target_class = "1",
-  n_models = 2L,
   n_core = 4,
   plot = FALSE
 )
@@ -327,12 +300,11 @@ result_shapr <- shapley(
   background_data = train[, predictors],
   model_performance = cv_aucpr,
   performance_metric = "aucpr",
-  shap_backend = "shapr",
+  backend = "shapr",
   pred_fun = pred_fun,
   target_class = "1",
-  n_models = 2L,
-  shapr_approach = "empirical",
-  shapr_n_MC_samples = 1000L,
+  shapr_method = "empirical",
+  sample_size = 1000,
   plot = TRUE
 )
 

@@ -9,35 +9,35 @@ Authors@R:
 Depends:
     R (>= 4.1.0)
 Description: This R package introduces Weighted Mean SHapley Additive exPlanations
-(WMSHAP), a framework for estimating and combining SHAP values across a
-grid of fine-tuned machine learning models or the base learners of stacked
-ensembles. Rather than relying on a single best-performing model, WMSHAP
-combines SHAP values from multiple models, weighting their contributions
-according to predictive performance. Model weights can be calculated using
-R-squared for regression and classification models or, for binary
-classifiers, the area under the precision-recall curve (AUCPR), the area
-under the receiver operating characteristic curve (AUC), or the F2 score. 
-The package also provides weighted confidence intervals for mean SHAP
-values, allowing feature importance to be evaluated across multiple models
-while accounting for variability in their contributions. This approach
-particularly improves accuracy if feature importance assessment at both local
-(individual) and global (feature) levels and improves the stability of feature 
-importance rankins (see the GitHub repository for references and details).  
-By integrating SHAP values across models, WMSHAP reduces reliance on any single 
-potentially overfitted or biased model, providing a more comprehensive and 
-generalizable assessment of feature importance. The package further implements 
-hypothesis tests to assess the statistical significance of individual feature 
-contributions, as well as comparative tests to evaluate differences in SHAP 
-contributions between features. It also provides criteria for automatic feature 
-selection across model grids and stacked ensembles, eliminating the need to 
-specify an arbitrary number of top features. This approach supports a more
-representative assessment of feature importance by considering evidence
-from multiple models rather than relying exclusively on the best-performing
-model. The package also provides visualizations of SHAP values at individual, 
-feature, and factor levels, including feature-selection plots based on weighted 
-mean WMSHAP ratios. Supported SHAP backends include 'h2o', 'treeshap', 'shapr', 
-and 'kernelshap', as well as native 'gpboost' explanations of the boosted-tree 
-component. 
+  (WMSHAP), a framework for estimating and combining SHAP values across a
+  grid of fine-tuned machine learning models or the base learners of stacked
+  ensembles. Rather than relying on a single best-performing model, WMSHAP
+  combines SHAP values from multiple models, weighting their contributions
+  according to predictive performance. Model weights can be calculated using
+  R-squared for regression and classification models or, for binary
+  classifiers, the area under the precision-recall curve (AUCPR), the area
+  under the receiver operating characteristic curve (AUC), or the F2 score. 
+  The package also provides weighted confidence intervals for mean SHAP
+  values, allowing feature importance to be evaluated across multiple models
+  while accounting for variability in their contributions. This approach
+  particularly improves accuracy if feature importance assessment at both local
+  (individual) and global (feature) levels and improves the stability of feature 
+  importance rankins (see the GitHub repository for references and details).  
+  By integrating SHAP values across models, WMSHAP reduces reliance on any single 
+  potentially overfitted or biased model, providing a more comprehensive and 
+  generalizable assessment of feature importance. The package further implements 
+  hypothesis tests to assess the statistical significance of individual feature 
+  contributions, as well as comparative tests to evaluate differences in SHAP 
+  contributions between features. It also provides criteria for automatic feature 
+  selection across model grids and stacked ensembles, eliminating the need to 
+  specify an arbitrary number of top features. This approach supports a more
+  representative assessment of feature importance by considering evidence
+  from multiple models rather than relying exclusively on the best-performing
+  model. The package also provides visualizations of SHAP values at individual, 
+  feature, and factor levels, including feature-selection plots based on weighted 
+  mean WMSHAP ratios. Supported SHAP backends include 'h2o', 'treeshap', 'shapr', 
+  and 'kernelshap', as well as native 'gpboost' explanations of the boosted-tree 
+  component. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
