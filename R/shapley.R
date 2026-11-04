@@ -1,5 +1,8 @@
 # check sample_size argument
 
+# @param method Character. Method for selecting important features based on WMSHAP.
+#               The default is \code{"mean"}; the alternative is \code{"lowerCI"}.
+
 #' @title Weighted Mean SHAP (WMSHAP) and Confidence Interval for Multiple Models
 #'
 #' @description
@@ -48,8 +51,6 @@
 #' @param performance_metric Character. Performance metric used to weight models.
 #'                           Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
 #'                           (classification metrics).
-#' @param method Character. Method for selecting important features based on WMSHAP.
-#'               The default is \code{"mean"}; the alternative is \code{"lowerCI"}.
 #' @param cutoff Numeric. WMSHAP mean cutoff used to identify and select important
 #'   features. The recommended default is 1 divided by the number of predictors
 #'   in the model.
@@ -96,8 +97,8 @@
 #' @param ... arguments that are used internally for compatibility with older
 #'            versions
 #'
-#' @importFrom utils setTxtProgressBar txtProgressBar globalVariables
-#' @importFrom stats weighted.mean
+#' @importFrom utils setTxtProgressBar txtProgressBar globalVariables head
+#' @importFrom stats weighted.mean predict setNames
 #' @importFrom h2o h2o.getModel h2o.auc h2o.aucpr h2o.r2
 #'             h2o.F2 h2o.shap_summary_plot
 #' @importFrom ggplot2 aes coord_flip element_text expansion geom_col

@@ -68,8 +68,11 @@ shapley.parallel <- function(tasks, worker, shared_data, n_core = -1L,
   # Results retain the original order, even with load balancing.
   # ============================================================
   run.one.model <- function(task) {
-    .shapley_model_worker(task, shared_data = .shapley_shared_data)
+    worker <- get(".shapley_model_worker", envir = .GlobalEnv)
+    shared <- get(".shapley_shared_data", envir = .GlobalEnv)
+    worker(task, shared_data = shared)
   }
+
   # Do not serialize the enclosing environment containing the cluster.
   environment(run.one.model) <- globalenv()
   parallel::parLapplyLB(cl, tasks, run.one.model)

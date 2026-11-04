@@ -1,7 +1,8 @@
-# Internal SHAPLEY function.
-# Global and local WMSHAP computed from the same SHAP matrices.
-# Works with native H2O, TreeSHAP, Kernel SHAP, shapr, and GPBoost.
-# ============================================================
+#' @title aggregate shap values for global-level computation
+#' @importFrom stats setNames
+#' @importFrom utils head
+#' @author E. F. Haghish
+#' @noRd
 
 shapley.aggregate <- function(results_by_model, included, w, newdata,
                               method = "mean", cutoff = 0.01,
@@ -108,7 +109,12 @@ shapley.aggregate <- function(results_by_model, included, w, newdata,
   })
   localShaps$value <- as.vector(t(as.matrix(as.data.frame(values_numeric))))
   contributionPlot <- ggplot2::ggplot(
-    localShaps, ggplot2::aes(x = feature, y = mean, colour = value)
+    localShaps,
+    ggplot2::aes(
+      x = !!as.name("feature"),
+      y = !!as.name("mean"),
+      colour = !!as.name("value")
+    )
   ) + ggplot2::geom_point(
     position = ggplot2::position_jitter(width = 0.18), alpha = 0.6)
 

@@ -47,10 +47,13 @@ importFrom(stats,
   aggregate,
   formula,
   na.omit,
+  predict,
+  setNames,
   weighted.mean
 )
 importFrom(utils,
   globalVariables,
+  head,
   setTxtProgressBar,
   txtProgressBar
 )

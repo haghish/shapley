@@ -99,9 +99,6 @@ Available methods are \code{"empirical"}, \code{"gaussian"},
 
 \item{...}{arguments that are used internally for compatibility with older
 versions}
-
-\item{method}{Character. Method for selecting important features based on WMSHAP.
-The default is \code{"mean"}; the alternative is \code{"lowerCI"}.}
 }
 \value{
 An object of class \code{"shapley"} (a named list) containing:
