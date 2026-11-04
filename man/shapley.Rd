@@ -2,12 +2,13 @@
 % Please edit documentation in R/shapley.R
 \name{shapley}
 \alias{shapley}
-\title{Weighted Mean SHAP (WMSHAP) and Confidence Interval for Multiple Models
-       (tuning grid, stacked ensemble, etc.)}
+\title{Weighted Mean SHAP (WMSHAP) and Confidence Interval for Multiple Models}
 \usage{
 shapley(
   models,
   newdata,
+  background_data = NULL,
+  pred_fun = NULL,
   plot = TRUE,
   performance_metric = "r2",
   standardize_performance_metric = FALSE,
@@ -16,72 +17,129 @@ shapley(
   method = "mean",
   cutoff = 0.01,
   top_n_features = NULL,
-  n_models = 10,
-  sample_size = NULL
+  n_models = 2,
+  sample_size = NULL,
+  shap_backend = "auto",
+  model_performance = NULL,
+  target_class = NULL,
+  shapr_approach = "empirical",
+  shapr_phi0 = NULL,
+  shapr_n_MC_samples = 1000L,
+  n_core = -1L
 )
 }
 \arguments{
 \item{models}{An H2O AutoML object, H2O grid object, \code{autoEnsemble} object,
-or a character vector of H2O model IDs.}
+a character vector of H2O model IDs, a fitted R model, or a named list of models.}
 
-\item{newdata}{An \code{H2OFrame} (i.e., a \code{data.frame}) already uploaded to the
-\code{h2o} server. SHAP contributions are computed on this data.}
+\item{newdata}{An \code{H2OFrame} for H2O models, or a data frame containing predictors
+for other models. SHAP contributions are computed on these observations.}
 
-\item{plot}{Logical. If \code{TRUE}, plots the WMSHAP summary (via \code{shapley.plot()}).}
+\item{background_data}{Data frame containing reference observations.
+Internally passed as \code{data} to \code{treeshap::unify()},
+\code{bg_X} to \code{kernelshap::kernelshap()}, and
+\code{x_train} to \code{shapr::explain()}.
+The native GPBoost backend does not use \code{background_data}.
+A common representative training subset is recommended for multiple models.}
+
+\item{pred_fun}{Optional prediction function of the form
+\code{function(model, newdata)}. Kernel SHAP accepts multiple outputs;
+shapr requires one numeric prediction per observation, selected using
+\code{target_class} when necessary.}
+
+\item{plot}{Logical. If \code{TRUE}, plots the WMSHAP summary using \code{shapley.plot()}.}
 
 \item{performance_metric}{Character. Performance metric used to weight models.
 Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
 (classification metrics).}
 
-\item{standardize_performance_metric}{Logical. If \code{TRUE}, rescales model weights so
-the weights sum to the number of included models.
-The default is \code{FALSE}.}
+\item{standardize_performance_metric}{Logical. Retained for compatibility.
+Both H2O and other models now use the same normalized performance weights,
+regardless of this argument. The default is \code{FALSE}.}
 
-\item{performance_type}{Character. Specify which performance metric performance estimate to use:
+\item{performance_type}{Character. Specify which performance estimate to use:
  \code{"train"} for training data, \code{"valid"}
-for validation, or \code{"xval"} for cross-validation (default).}
+for validation, or \code{"xval"} for cross-validation (default).
+Applies to H2O models; for other models supply \code{model_performance}.}
 
-\item{minimum_performance}{Numeric. Specify the minimum performance metric
+\item{minimum_performance}{Numeric. Minimum performance metric
 for a model to be included in calculating WMSHAP.
-Models below this threshold receive
-zero weight and are excluded. The default is \code{0}.
-Specifying a minimum performance can be used to compute
-WMSHAP for a set of competitive models.}
+Models below this threshold are excluded. The default is \code{0}.}
 
-\item{method}{Character. Specify the method for selecting important features
-based on their WMSHAP. The default is
-\code{"mean"}, which selects features whose WMSHAP
-exceeds the \code{cutoff}. The alternative is
-\code{"lowerCI"}, which selects features whose lower bound of confidence
-interval exceeds the \code{cutoff}.}
+\item{method}{Character. Method for selecting important features based on WMSHAP.
+The default is \code{"mean"}; the alternative is \code{"lowerCI"}.}
 
 \item{cutoff}{Numeric. Cutoff applied by \code{method} for selecting important features.}
 
-\item{top_n_features}{Integer or \code{NULL}. If not \code{NULL}, restricts SHAP computation to the
-top N features per model (reduces runtime). This also selects the top N features by WMSHAP
-in the returned \code{selectedFeatures}.}
+\item{top_n_features}{Integer or \code{NULL}. If specified, select the top N features.
+All features are used to compute global importance ratios;
+this argument controls feature selection afterwards.}
 
-\item{n_models}{Integer. Minimum number of models that must meet the performance threshold
-for WMSHAP and CI computation. Use \code{1} to compute summary SHAP for a single model.
-The default is 10.}
+\item{n_models}{Integer. Minimum number of included models for WMSHAP.
+Must be at least \code{2}; the default is \code{10}. Models that do not
+meet \code{minimum_performance} are excluded from this count.}
 
 \item{sample_size}{Integer. Number of rows in \code{newdata} used for SHAP assessment.
 Defaults to all rows. Reducing this can speed up development runs.}
+
+\item{shap_backend}{Character. The default \code{"auto"} selects H2O for
+H2O models, native \code{gpboost} SHAP for \code{gpb.Booster} models,
+\code{treeshap} for compatible tree models, and
+\code{kernelshap} otherwise. If different non-H2O model classes would
+require different methods, \code{kernelshap} is used for all models.
+Specify \code{"h2o"}, \code{"gpboost"}, \code{"treeshap"},
+\code{"kernelshap"}, or \code{"shapr"} to select one method.
+The GPBoost and shapr packages are installed separately when needed.
+Native GPBoost SHAP explains
+only the boosted-tree component, excluding Gaussian-process and random effects.}
+
+\item{model_performance}{Named numeric vector containing one model performance
+estimate per non-H2O model. Use comparable cross-validation estimates,
+such as AUCPR, for all models. Names should correspond to model list names.}
+
+\item{target_class}{Name or index of the prediction class to explain for
+models returning more than one prediction per observation. The second
+class is used by default in binary classification.}
+
+\item{shapr_approach}{Character. Feature-dependence approach used by
+\code{shapr::explain()}. The default is \code{"empirical"}. Specify
+\code{"independence"} when a marginal explanation is desired.
+Other approaches supported by shapr can also be specified.}
+
+\item{shapr_phi0}{Optional numeric baseline prediction supplied as
+\code{phi0} to \code{shapr::explain()}. By default, it is the mean of
+model predictions on \code{background_data}. May be a named vector
+with one baseline per model.}
+
+\item{shapr_n_MC_samples}{Positive integer. Number of Monte Carlo samples
+passed to \code{shapr::explain()}; the default is 1000.}
+
+\item{n_core}{Integer. Number of parallel R workers for computing SHAP
+contributions across fitted models. The default \code{-1} uses all
+detected physical CPU cores, limited to the number of models. Use
+\code{1} for sequential computation or a positive integer for a fixed
+number of workers. Each worker explains one model at a time. This
+argument does not control internal parallelism in the SHAP backends.}
 }
 \value{
 An object of class \code{"shapley"} (a named list) containing:
 \describe{
   \item{ids}{Character vector of model IDs originally supplied or extracted.}
-  \item{included_models}{Character vector of model IDs included after filtering by performance.}
+  \item{included_models}{Character vector of included model IDs.}
   \item{ignored_models}{Data frame of excluded models and their performance.}
-  \item{weights}{Numeric vector of model weights (performance metrics) for included models.}
-  \item{results}{Data frame of row-level SHAP contributions merged across models.}
-  \item{summaryShaps}{Data frame of feature-level WMSHAP means and confidence intervals.}
+  \item{weights}{Legacy rescaled model weights (sum equals the number of models).}
+  \item{model_weights}{Normalized model-performance weights (sum equals 1).}
+  \item{results}{Data frame of row-level SHAP contributions across models.}
+  \item{summaryShaps}{Data frame of global WMSHAP ratios and intervals.}
   \item{selectedFeatures}{Character vector of selected important features.}
-  \item{feature_importance}{List of per-feature absolute contribution summaries by model.}
-  \item{contributionPlot}{A ggplot-like object returned by \code{h2o.shap_summary_plot()}
-        used for the WMSHAP (“wmshap”) style plot.}
-  \item{plot}{A ggplot object (bar plot) if \code{plot = TRUE}, otherwise \code{NULL}.}
+  \item{feature_importance}{List of feature importance values by model.}
+  \item{contributionPlot}{Plot data for local SHAP contributions.}
+  \item{plot}{A ggplot object when \code{plot = TRUE}.}
+  \item{localShaps}{Individual-level WMSHAP and between-model intervals
+        for all supported models, including H2O.}
+  \item{model_backends}{Selected SHAP backend for each included non-H2O model.}
+  \item{explanation_scope}{For native GPBoost SHAP, \code{"gpboost_tree_component"}.
+        This excludes random effects and Gaussian-process contributions.}
 }
 }
 \description{
@@ -90,11 +148,24 @@ importance across a collection of models (e.g., an H2O grid/AutoML leaderboard o
 base-learners of an ensemble). Instead of reporting SHAP contributions for a single model,
 this function summarizes feature importance across multiple models and weights each model
 by a chosen performance metric.
-Currently, only models trained by the \code{h2o} machine learning platform,
-\code{autoEnsemble}, and the \code{HMDA} R packages are supported.
+Models trained by the \code{h2o} machine learning platform use the native H2O procedure.
+Other models can be explained using \code{treeshap}, \code{kernelshap},
+\code{shapr}, or the native \code{gpboost} SHAP method.
+H2O, TreeSHAP, and Kernel SHAP are installed with SHAPLEY. GPBoost and
+shapr are optional packages, required only when their methods are used.
 }
 \details{
-The function works as follows:
+When \code{shap_backend = "auto"}, SHAPLEY uses the H2O backend for H2O
+models, native GPBoost tree contributions for \code{gpb.Booster} models
+(requires the optional \code{gpboost} package),
+TreeSHAP for compatible tree models, and Kernel SHAP for models
+not supported by TreeSHAP. If the near-optimal set contains models requiring
+different non-H2O backends, Kernel SHAP is used for all included models
+to maintain a common calculation method. The \code{shapr} backend can be
+selected explicitly to calculate dependence-aware SHAP values; it requires
+installing the optional \code{shapr} package.
+
+   The function works as follows:
    \enumerate{
      \item For each model, SHAP contributions are computed on \code{newdata}.
      \item For each model, feature-level absolute SHAP contributions are aggregated and
@@ -102,74 +173,180 @@ The function works as follows:
      \item Models are weighted by a performance metric (e.g., \code{"r2"} for regression or
            \code{"auc"} / \code{"aucpr"} for classification).
      \item The weighted mean SHAP ratio (WMSHAP) is computed for each feature, along with an
-           confidence interval across models.
+           interval across models.
    }
 }
+\note{
+SHAP values from different backends are only directly comparable if they
+  explain the same prediction output and use compatible feature-dependence assumptions.
+  The intervals summarize between-model variation, not population uncertainty.
+  The H2O implementation directly retrieves local SHAP contributions using
+  \code{h2o::h2o.predict_contributions()}, without creating a SHAP plot per model.
+  Internal performance weights sum to 1; legacy output \code{weights}
+  sums to the number of included models for compatibility, while
+  \code{model_weights} contains the normalized weights.
+  Sampling uncertainty from shapr is different and is not included in these intervals.
+  For GPBoost mixed-effects models, native SHAP contributions describe the
+  boosted-tree component only. They do not explain group-level random effects,
+  Gaussian-process effects, or the entire response prediction. Model weights
+  may be based on full-model cross-validation performance, but the explained
+  component remains the boosted-tree function.
+}
 \examples{
-
 \dontrun{
-# load the required libraries for building the base-learners and the ensemble models
-library(h2o)            #shapley supports h2o models
+
+# ============================================================
+# An Example Using h2o Package
+# ============================================================
 library(shapley)
-
-# initiate the h2o server
-h2o.init(ignore_config = TRUE, nthreads = 2, bind_to_localhost = FALSE, insecure = TRUE)
-
-# upload data to h2o cloud
+library(h2o)
+h2o.init(ignore_config = TRUE, nthreads = 2,
+         bind_to_localhost = FALSE, insecure = TRUE)
 prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 prostate <- h2o.importFile(path = prostate_path, header = TRUE)
-
-set.seed(10)
-
-### H2O provides 2 types of grid search for tuning the models, which are
-### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
-### can be computed for both types.
-
-#######################################################
-### PREPARE AutoML Grid (takes a couple of minutes)
-#######################################################
-# run AutoML to tune various models (GBM) for 60 seconds
 y <- "CAPSULE"
-prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
-aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
-                 include_algos=c("GBM"),
-
-                 # this setting ensures the models are comparable for building a meta learner
-                 seed = 2023, nfolds = 10,
+prostate[, y] <- as.factor(prostate[, y])
+grid <- h2o.grid(algorithm = "gbm", y = y,
+                 training_frame = prostate,
+                 hyper_params = list(ntrees = seq(1, 50)),
+                 grid_id = "ensemble_grid", nfolds = 10,
                  keep_cross_validation_predictions = TRUE)
+result <- shapley(models = grid, newdata = prostate,
+                  performance_metric = "aucpr")
 
-### call 'shapley' function to compute the weighted mean and weighted confidence intervals
-### of SHAP values across all trained models.
-### Note that the 'newdata' should be the testing dataset!
-result <- shapley(models = aml, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
+# ============================================================
+# An Example Using ranger Package
+# ============================================================
+library(tidymodels)
+library(ranger)
+library(shapley)
 
-#######################################################
-### PREPARE H2O Grid (takes a couple of minutes)
-#######################################################
-# make sure equal number of "nfolds" is specified for different grids
-grid <- h2o.grid(algorithm = "gbm", y = y, training_frame = prostate,
-                 hyper_params = list(ntrees = seq(1,50,1)),
-                 grid_id = "ensemble_grid",
+# 1. prepare the dataset for training and testing
+prostate <- read.csv(system.file("extdata", "prostate.csv", package = "h2o"))
+prostate$ID <- NULL
+prostate$CAPSULE <- factor(prostate$CAPSULE, levels = c(1, 0))
 
-                 # this setting ensures the models are comparable for building a meta learner
-                 seed = 2023, fold_assignment = "Modulo", nfolds = 10,
-                 keep_cross_validation_predictions = TRUE)
+set.seed(2026)
+split <- initial_split(prostate, prop = 0.80, strata = CAPSULE)
+train <- training(split)
+test <- testing(split)
+predictors <- setdiff(names(train), "CAPSULE")
 
-result2 <- shapley(models = grid, newdata = prostate, performance_metric = "aucpr", plot = TRUE)
+# 2. define a grid for randomforest configurations.
+rf <- rand_forest(
+  trees = tune(),
+  mtry = tune(),
+  min_n = tune()
+) |>
+  set_engine("ranger", num.threads = 1L, seed = 2026L) |>
+  set_mode("classification")
 
-#######################################################
-### PREPARE autoEnsemble STACKED ENSEMBLE MODEL
-#######################################################
+wf <- workflow() |>
+  add_model(rf) |>
+  add_formula(CAPSULE ~ .)
 
-### get the models' IDs from the AutoML and grid searches.
-### this is all that is needed before building the ensemble,
-### i.e., to specify the model IDs that should be evaluated.
-library(autoEnsemble)
-ids    <- c(h2o.get_ids(aml), h2o.get_ids(grid))
-autoSearch <- ensemble(models = ids, training_frame = prostate, strategy = "search")
-result3 <- shapley(models = autoSearch, newdata = prostate,
-                   performance_metric = "aucpr", plot = TRUE)
+grid <- tidyr::crossing(
+  trees = c(100L, 200L, 300L, 400L, 500L),
+  mtry = c(2L, 3L, 4L, 5L, 6L, 7L),
+  min_n = c(2L, 4L, 6L, 8L)
+)
 
+# 3. evaluate the configurations using 10-fold CV and AUCPR as evaluation metrics.
+folds <- vfold_cv(train, v = 10, strata = CAPSULE)
+
+cv <- tune_grid(
+  wf,
+  resamples = folds,
+  grid = grid,
+  metrics = metric_set(pr_auc),
+  control = control_grid(verbose = TRUE, save_pred = FALSE,
+                         save_workflow = FALSE, event_level = "first")
+)
+
+# mean AUCPR across CV folds
+scores <- collect_metrics(cv) |>
+  dplyr::filter(.metric == "pr_auc", is.finite(mean)) |>
+  dplyr::arrange(dplyr::desc(mean))
+
+# 4: select the near-optimal configurations. for example,
+# retain top models with at least 98\% of the best mean AUCPR.
+near <- scores |>
+  dplyr::filter(mean >= 0.98 * max(scores$mean))
+
+# 5: fit each retained configuration on the complete training data.
+models <- lapply(seq_len(nrow(near)), function(i) {
+  pars <- near[i, c("trees", "mtry", "min_n")]
+  fitted <- finalize_workflow(wf, pars) |>
+    fit(data = train)
+  workflows::extract_fit_engine(fitted)
+})
+
+names(models) <- paste0("model", seq_along(models))
+cv_aucpr <- stats::setNames(near$mean, names(models))
+
+# computing WMSHAP using treeshap package
+# ------------------------------------------------------------
+result_tree <- shapley(
+  models = models,
+  newdata = test[, predictors],
+  background_data = train[, predictors],
+  model_performance = cv_aucpr,
+  performance_metric = "aucpr",
+  shap_backend = "treeshap",
+  target_class = "1",
+  n_models = 2,
+  plot = TRUE
+)
+
+# computing WMSHAP using kernelshap package
+# ------------------------------------------------------------
+pred_fun <- function(model, X) {
+  requireNamespace("ranger", quietly = TRUE)
+  as.numeric(stats::predict(model, data = as.data.frame(X), num.threads = 1)$predictions[, "1"])
+}
+
+result_kernel <- shapley(
+  models = models,
+  newdata = test[, predictors],
+  background_data = train[, predictors],
+  model_performance = cv_aucpr,
+  performance_metric = "aucpr",
+  shap_backend = "kernelshap",
+  pred_fun = pred_fun,
+  target_class = "1",
+  n_models = 2L,
+  n_core = 4,
+  plot = FALSE
+)
+
+# omputing WMSHAP using shapr package
+# ------------------------------------------------------------
+result_shapr <- shapley(
+  models = models,
+  newdata = test[, predictors],
+  background_data = train[, predictors],
+  model_performance = cv_aucpr,
+  performance_metric = "aucpr",
+  shap_backend = "shapr",
+  pred_fun = pred_fun,
+  target_class = "1",
+  n_models = 2L,
+  shapr_approach = "empirical",
+  shapr_n_MC_samples = 1000L,
+  plot = TRUE
+)
+
+# WMSHAP global results (feature-level)
+# ------------------------------------------------------------
+print(result_tree$summaryShaps)
+print(result_kernel$summaryShaps)
+print(result_shapr$summaryShaps)
+
+# WMSHAP local results (individual-level)
+# ------------------------------------------------------------
+print(head(result_tree$localShaps))
+print(head(result_kernel$localShaps))
+print(head(result_shapr$localShaps))
 
 }
 }
