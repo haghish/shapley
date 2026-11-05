@@ -49,7 +49,8 @@
 #'   \code{target_class} when necessary. This argument is ignored for models trained
 #'   with 'h2o' package, or when the 'treeshap' package is defined as the backend.
 #' @param performance_metric Character. Performance metric used to weight models.
-#'                           Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
+#'                           Options are \code{"r2"} (regression), \code{"aucpr"},
+#'                           \code{"auc"}, and \code{"f2"}
 #'                           (classification metrics).
 #' @param cutoff Numeric. WMSHAP mean cutoff used to identify and select important
 #'   features. The recommended default is 1 divided by the number of predictors
@@ -58,7 +59,8 @@
 #'                       All features are used to compute global importance ratios;
 #'                       this argument controls feature selection afterwards.
 #' @param sample_size Integer. Number of rows in \code{newdata} used for SHAP assessment.
-#'                    Defaults to all rows. Reducing this can speed up development runs.
+#'                    Defaults to 1000 rows. Increasing this can slows down WMSHAP computation,
+#'                    but improves its accuracy and stability.
 #'                    Note that for 'shapr' package, this argument defines of Monte Carlo samples
 #'   passed to \code{shapr::explain()}.
 #' @param plot Logical. If \code{TRUE}, plots the WMSHAP summary using \code{shapley.plot()}.
@@ -303,11 +305,12 @@ shapley <- function(models,
                     newdata,
                     background_data = NULL,
                     pred_fun = NULL,
+                    model_performance = NULL,
                     performance_metric = "r2",
                     backend = "auto",
-                    model_performance = NULL,
 
-                    sample_size = NULL,
+
+                    sample_size = 1000L,
                     n_core = -1L,
                     cutoff = 0,
                     plot = TRUE,
@@ -322,13 +325,20 @@ shapley <- function(models,
 
   # check the ... arguments
   # ============================================================
-  hidden_args <- c("minimum_performance", "n_models", "shapr_phi0")
+  hidden_args <- c("minimum_performance", "n_models", "shapr_phi0", "method")
   stopifnot("incompatible '...' arguments" = (names(list(...)) %in% hidden_args))
   minimum_performance    <- threeDots(name = "minimum_performance", ..., default = 0)
   n_models               <- threeDots(name = "n_models", ..., default = 2)
   shapr_phi0             <- threeDots(name = "shapr_phi0", ..., default = NULL)
   method                 <- threeDots(name = "method", ..., default = "mean")
 
+  # if backend is shapr, change the default of sample_size
+  if (backend == "shapr") {
+    if (is.null(sample_size)) {
+      message("shapr requires the 'sample_size' argument, which is set to NULL")
+      sample_size <- 1000L
+    }
+  }
 
   # WMSHAP requires at least two fitted models.
   # ============================================================

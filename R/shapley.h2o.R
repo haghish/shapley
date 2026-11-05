@@ -104,8 +104,8 @@ shapley.h2o <- function(models,
                         sample_size = NULL,
                         n_core = 1L) {
 
-  if (!performance_metric %in% c("r2", "aucpr", "auc", "f2", "mcc")) {
-    stop("'performance_metric' must be 'r2', 'aucpr', 'auc', 'mcc', or 'f2'")
+  if (!performance_metric %in% c("r2", "aucpr", "auc", "f2")) {
+    stop("'performance_metric' must be 'r2', 'aucpr', 'auc', or 'f2'")
   }
   if (!performance_type %in% c("train", "valid", "xval")) {
     stop("'performance_type' must be 'train', 'valid', or 'xval'")

@@ -63,7 +63,8 @@ shapley.h2o.one <- function(model_id, shared_data = NULL) {
   } else if (metric == "auc") {
     performance <- h2o::h2o.auc(model, train = train, valid = valid, xval = xval)
   } else if (metric == "f2") {
-    performance <- h2o::h2o.F2(model)
+    metrics <- h2o::h2o.performance(model, train = train, valid = valid, xval = xval)
+    performance <- h2o::h2o.F2(metrics, thresholds = "max")[[1L]]
   } else {
     stop("Unsupported performance metric")
   }
