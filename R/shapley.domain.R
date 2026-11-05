@@ -1,281 +1,204 @@
-# ??? The running speed of this function can be improved
 
-#' @title Compute and plot weighted mean SHAP contributions at group level (factors or domains)
-#' @description Aggregates SHAP contributions across user-defined domains (groups of features),
-#'              computes weighted mean and an 95% CI across models, and
-#'              returns a plot plus summary tables.
-#' @param shapley Object of class \code{"shapley"}, as returned by the 'shapley' function
-#' @param domains Named list of character vectors. Each element name is a domain name;
-#'                each element value is a character vector of feature names assigned to that domain.
-#' @param plot Logical. If \code{TRUE}, a bar plot of domain WMSHAP contributions is created.
-#' @param colorcode Character vector for specifying the color names for each domain in the plot.
-#' @param print Logical. If TRUE, prints the domain WMSHAP summary table.
-#' @param xlab Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")
-#' @importFrom stats na.omit aggregate formula
-#' @importFrom h2o h2o.shap_summary_plot h2o.getModel
-#' @importFrom ggplot2 theme guides guide_legend guide_colourbar
-#'             margin theme_classic ylab xlab ggtitle
-#'
-#' @author E. F. Haghish
-#' @return A list with:
-#' \describe{
-#'   \item{domainSummary}{Data frame with WMSHAP domain contributions and CI.}
-#'   \item{domainRatio}{Data frame with per-model WMSHAP domain contribution ratios.}
-#'   \item{plot}{A ggplot object (or NULL if plotting not requested/implemented).}
-#' }
-#' @examples
-#'
-#' \dontrun{
-#' # load the required libraries for building the base-learners and the ensemble models
-#' library(h2o)            #shapley supports h2o models
-#' library(shapley)
-#'
-#' # initiate the h2o server
-#' h2o.init(ignore_config = TRUE, nthreads = 2, bind_to_localhost = FALSE, insecure = TRUE)
-#'
-#' # upload data to h2o cloud
-#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
-#'
-#' ### H2O provides 2 types of grid search for tuning the models, which are
-#' ### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
-#' ### can be computed for both types.
-#'
-#' set.seed(10)
-#'
-#' #######################################################
-#' ### PREPARE AutoML Grid (takes a couple of minutes)
-#' #######################################################
-#' # run AutoML to tune various models (GBM) for 60 seconds
-#' y <- "CAPSULE"
-#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
-#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
-#'                  include_algos=c("GBM"),
-#'
-#'                  # this setting ensures the models are comparable for building a meta learner
-#'                  seed = 2023, nfolds = 10,
-#'                  keep_cross_validation_predictions = TRUE)
-#'
-#' ### call 'shapley' function to compute the weighted mean and weighted confidence intervals
-#' ### of SHAP values across all trained models.
-#' ### Note that the 'newdata' should be the testing dataset!
-#' result <- shapley(models = aml, newdata = prostate, plot = TRUE)
-#'
-#' #######################################################
-#' ### PLOT THE WEIGHTED MEAN SHAP VALUES
-#' #######################################################
-#'
-#' shapley.plot(result, plot = "bar")
-#'
-#' #######################################################
-#' ### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
-#' #######################################################
-#' shapley.domain(shapley = result, plot = TRUE,
-#'                domains = list(Demographic = c("RACE", "AGE"),
-#'                               Cancer = c("VOL", "PSA", "GLEASON"),
-#'                               Tests = c("DPROS", "DCAPS")),
-#'                               print = TRUE)
-#' }
-#' @export
+shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
+                           colorcode = NULL, xlab = "Domains") {
 
-shapley.domain <- function(shapley,
-                           domains,
-                           plot = TRUE,
-                           print = FALSE,
-                           colorcode = NULL,
-                           xlab = "Domains") {
+  # Basic checks
+  # ============================================================
+  if (length(shapley[["ids"]]) < 1L) stop("no model ID was found", call. = FALSE)
+
+  if (!is.list(domains) || length(domains) == 0L || is.null(names(domains)) ||
+      anyNA(names(domains)) || any(!nzchar(names(domains))) || anyDuplicated(names(domains))) {
+    stop("'domains' must be a non-empty named list with unique names", call. = FALSE)
+  }
+
+  if (!all(vapply(domains, function(x) is.character(x) && length(x) > 0L && !anyNA(x), logical(1)))) {
+    stop("each domain must contain a non-empty character vector of features", call. = FALSE)
+  }
+
+  # Check for overlapping domains
+  all_features <- unlist(domains, use.names = FALSE)
+  if (anyDuplicated(all_features)) {
+    stop("each feature must belong to only one domain", call. = FALSE)
+  }
 
   # Variable definitions
   # ============================================================
-  DOMAINS <- names(domains)
-  COLORCODE <- c("#855C75FF", "#D9AF6BFF", "#AF6458FF","#736F4CFF","#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF", "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF")
-  FILLCOLOR <- NULL
-  mean      <- NA
-  Plot      <- NULL
+  COLORCODE <- c("#855C75FF", "#D9AF6BFF", "#AF6458FF", "#736F4CFF",
+                 "#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF",
+                 "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF")
 
-  if (!is.null(colorcode)) COLORCODE <- colorcode
-
-  # Feature selection
-  # ============================================================
-  if (length(shapley[["ids"]]) < 1) stop("no model ID was found")
-
-  # Change the plot reflect on single SHAP vs. multimodel WMSHAP
-  # ============================================================
-  if (length(shapley[["ids"]]) > 1 ) {
-    if (length(domains) <= 10) FILLCOLOR <- COLORCODE[1:length(domains)]
-    else FILLCOLOR <- COLORCODE[1]
+  if (!is.null(colorcode)) {
+    if (!is.character(colorcode) || length(colorcode) == 0L) {
+      stop("'colorcode' must be a non-empty character vector", call. = FALSE)
+    }
+    COLORCODE <- colorcode
   }
 
-  # ############################################################
-  # DOMAINS ANALYSIS
-  # ############################################################
-  if (!is.null(domains)) {
-    UNQ          <- names(domains)
-    domainsShaps <- data.frame(
-      domains = UNQ,
-      mean = NA,
-      sd = NA,
-      ci = NA,
-      lowerCI = NA,
-      upperCI = NA)
+  Plot <- NULL
 
-    w <- shapley$weights
-    # create a raw dataset for domain data
-    results <- as.data.frame(shapley$results)
-    results$feature <- as.character(results$feature)
-    results$Row.names <- NA
-    names(results)[1] <- "domain"
-
-    # add the domain names based on specified features
-    for (i in 1:length(domains)) {
-      getnames <- domains[[i]]
-
-      # make sure the names are correct
-      for (j in getnames) {
-        if (!(j %in% results$feature)) stop(paste(j, "was not in the dataframe"))
-        results$domain[results$feature == j] <- names(domains)[i]
-      }
-    }
-    results$feature <- NULL
-    results <- na.omit(results)
-    #View(na.omit(results))
-
-    # aggregate
-    aggregate_contribution <- function(df, column) {
-      aggregate(formula(paste(column, "~ domain + index")), data = df, sum)
-    }
-
-    # aggregate domain data at row level
-    # ============================================================
-    domainRow <- NULL
-    for (i in grep("^contribution", names(results))) {
-      aggregated_df <- aggregate_contribution(results, names(results)[i])
-      if (is.null(domainRow)) {
-        domainRow <- aggregated_df
-      } else {
-        domainRow <- merge(domainRow, aggregated_df, by = c("domain", "index"))
-      }
-    }
-
-    # aggregate domain data at column level
-    # ============================================================
-    contributionNames <- names(domainRow)[grep("^contribution", names(domainRow))]
-    absSum <- function(x) return(sum(abs(x)))
-    aggregate_column <- function(df, column) {
-      aggregate(formula(paste(column, "~ domain")), data = domainRow, absSum)
-    }
-    domainColumn <- NULL
-    for (i in contributionNames) {
-      aggregated_df <- aggregate_column(domainRow, i)
-      if (is.null(domainColumn)) {
-        domainColumn <- aggregated_df
-      }
-      else {
-        domainColumn <- cbind(domainColumn, aggregated_df[,2])
-      }
-    }
-    colnames(domainColumn) <- c("domain", contributionNames)
-
-    # Compute domains' ratios of contributions at column level
-    # ============================================================
-    domainRatio <- domainColumn
-    TOTAL <- colSums(domainColumn[, contributionNames], na.rm = TRUE)
-    domainRatio[, contributionNames] <- sweep(domainRatio[, contributionNames], 2, TOTAL, "/")
-
-    # # Compute relative contributions at column level
-    # # ============================================================
-    # domainRelative <- domainColumn
-    # MAX <- apply(domainRelative[, contributionNames], 2, max)
-    # domainRelative[, contributionNames] <- sweep(domainRelative[, contributionNames], 2, MAX, "/")
-    # View(domainRelative)
-
-    # create a summary dataset to store cross-model domain contributions
-    # ----------------------------------------------------------
-    SUMMARY <- data.frame(domain = names(domains),
-                          mean = NA,
-                          sd = NA,
-                          ci = NA,
-                          lowerCI = NA,
-                          upperCI = NA)
-
-    ### COMPUTING FOR RATIO VALUES
-    for (i in unique(domainRatio$domain)) {
-      tmp <- domainRatio[domainRatio$domain == i, contributionNames]
-      weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
-      weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
-      weighted_sd   <- sqrt(weighted_var)
-      ci            <- 1.96 * weighted_sd / sqrt(length(tmp))
-      SUMMARY[SUMMARY$domain == i, "mean"] <- weighted_mean
-      SUMMARY[SUMMARY$domain == i, "sd"]   <- weighted_sd
-      SUMMARY[SUMMARY$domain == i, "ci"]   <- ci
-
-      # Compute the lower and upper confidence intervals
-      # -------------------------------------------------------------
-      SUMMARY[SUMMARY$domain == i, "lowerCI"] <- weighted_mean - ci
-      SUMMARY[SUMMARY$domain == i, "upperCI"] <- weighted_mean + ci
-    }
-
-    ### COMPUTING FOR RELATIVE VALUES
-    # for (i in unique(domainRelative$domain)) {
-    #   tmp <- domainRelative[domainRelative$domain == i, contributionNames]
-    #   weighted_mean <- weighted.mean(tmp, w, na.rm = TRUE)
-    #   weighted_var  <- sum(w * (tmp - weighted_mean)^2, na.rm = TRUE)  /  (sum(w, na.rm = TRUE) - 1)
-    #   weighted_sd   <- sqrt(weighted_var)
-    #   ci            <- 1.96 * weighted_sd / sqrt(length(tmp))
-    #   print(i)
-    #   SUMMARY[SUMMARY$domain == i, "mean"] <- weighted_mean
-    #   SUMMARY[SUMMARY$domain == i, "sd"]   <- weighted_sd
-    #   SUMMARY[SUMMARY$domain == i, "ci"]   <- ci
-    #
-    #   # Compute the lower and upper confidence intervals
-    #   # -------------------------------------------------------------
-    #   SUMMARY[SUMMARY$domain == i, "lowerCI"] <- weighted_mean - ci
-    #   SUMMARY[SUMMARY$domain == i, "upperCI"] <- weighted_mean + ci
-    # }
-
-    SUMMARY$domain <- factor(
-      SUMMARY$domain,
-      levels = SUMMARY$domain[order(
-        SUMMARY[["mean"]])])
-
-    ftr <- SUMMARY$domain #FEATURES
-    lci <- SUMMARY$lowerCI
-    uci <- SUMMARY$upperCI
-  }
-
-  # Bar plot at DOMAIN level
+  # Prepare domain data
   # ============================================================
-  if (plot & !is.null(domains) ) {
+  results <- as.data.frame(shapley$results)
+  results$Row.names <- NULL
 
-    Plot <- ggplot(data = NULL,
-                   aes(x = ftr,
-                       y = SUMMARY$mean)) +
-      geom_col(fill = FILLCOLOR, alpha = 0.8) +
-      geom_errorbar(aes(ymin = lci,
-                        ymax = uci),
-                    width = 0.2, color = "#7A004BF0",
-                    alpha = 0.75, linewidth = 0.7) +
-      coord_flip() +  # Rotating the graph to have mean values on X-axis
-      ggtitle("") +
-      xlab(paste0(xlab,"\n")) +
-      ylab("\nWeighted Mean SHAP contributions of domains") +
-      theme_classic() +
-      # Reduce top plot margin
-      theme(plot.margin = margin(t = -0.5,
-                                 r = .25,
-                                 b = .25,
-                                 l = .25,
-                                 unit = "cm")) +
-      # Set lower limit of expansion to 0
-      scale_y_continuous(expand = expansion(mult = c(0, 0.05)))
+  if (!all(c("index", "feature") %in% names(results))) {
+    stop("'shapley$results' must contain 'index' and 'feature'", call. = FALSE)
   }
 
-  if (plot) print(Plot)
-  if (print) print(SUMMARY)
+  results$feature <- as.character(results$feature)
+  contributionNames <- grep("^contribution", names(results), value = TRUE)
 
-  return(list(domainSummary = SUMMARY,
-              domainRatio   = domainRatio,
-              plot          = Plot))
+  if (length(contributionNames) == 0L) {
+    stop("no SHAP contribution columns were found", call. = FALSE)
+  }
+
+  if (!all(vapply(results[contributionNames], is.numeric, logical(1)))) {
+    stop("SHAP contribution columns must be numeric", call. = FALSE)
+  }
+
+  # Assign features to their domains without overwriting the observation index
+  # ============================================================
+  results$domain <- NA_character_
+  missing_features <- setdiff(all_features, unique(results$feature))
+
+  if (length(missing_features) > 0L) {
+    stop(paste("Features not found:", paste(missing_features, collapse = ", ")), call. = FALSE)
+  }
+
+  for (i in seq_along(domains)) {
+    results$domain[results$feature %in% domains[[i]]] <- names(domains)[i]
+  }
+
+  # Keep only features assigned to a domain
+  # ============================================================
+  results <- results[!is.na(results$domain), c("index", "domain", contributionNames), drop = FALSE]
+
+  if (anyNA(results)) stop("domain contributions contain missing values", call. = FALSE)
+  if (any(!is.finite(as.matrix(results[contributionNames])))) {
+    stop("domain contributions must be finite", call. = FALSE)
+  }
+
+  # Aggregate SHAP contributions at the observation level
+  # ============================================================
+  # Sum signed contributions within each domain before taking absolute values.
+
+  domainRow <- stats::aggregate(
+    results[, contributionNames, drop = FALSE],
+    by = list(domain = results$domain, index = results$index),
+    FUN = sum
+  )
+
+  # Aggregate absolute domain contributions across observations
+  # ============================================================
+  domainColumn <- stats::aggregate(
+    abs(domainRow[, contributionNames, drop = FALSE]),
+    by = list(domain = domainRow$domain),
+    FUN = sum
+  )
+
+  # Preserve the user-specified order of domains
+  domainColumn <- domainColumn[match(names(domains), domainColumn$domain), , drop = FALSE]
+  rownames(domainColumn) <- NULL
+
+  # Compute domain contribution ratios for each model
+  # ============================================================
+  contributionMatrix <- as.matrix(domainColumn[, contributionNames, drop = FALSE])
+  TOTAL <- colSums(contributionMatrix)
+  ratioMatrix <- contributionMatrix
+
+  for (j in seq_along(TOTAL)) {
+    if (TOTAL[j] > 0) ratioMatrix[, j] <- contributionMatrix[, j] / TOTAL[j]
+    else ratioMatrix[, j] <- 0
+  }
+
+  domainRatio <- data.frame(domain = domainColumn$domain, ratioMatrix, check.names = FALSE)
+
+  # Prepare and align model-performance weights
+  # ============================================================
+  original_weights <- shapley$weights
+  w <- as.numeric(original_weights)
+  weight_names <- names(original_weights)
+
+  if (!is.null(weight_names)) {
+    model_ids <- sub("^contribution_?", "", contributionNames)
+
+    if (all(model_ids %in% weight_names)) {
+      w <- as.numeric(original_weights[model_ids])
+    } else if (all(contributionNames %in% weight_names)) {
+      w <- as.numeric(original_weights[contributionNames])
+    }
+  }
+
+  if (length(w) != length(contributionNames) || anyNA(w) ||
+      any(!is.finite(w)) || any(w < 0) || sum(w) <= 0) {
+    stop("invalid or incompatible model-performance weights", call. = FALSE)
+  }
+
+  # Normalize weights to sum to the number of models
+  n_models <- length(w)
+  w <- w / sum(w) * n_models
+
+  # Compute weighted domain summaries
+  # ============================================================
+  SUMMARY <- data.frame(domain = names(domains), mean = NA_real_, sd = NA_real_,
+                        ci = NA_real_, lowerCI = NA_real_, upperCI = NA_real_)
+
+  for (i in seq_len(nrow(SUMMARY))) {
+
+    tmp <- as.numeric(domainRatio[i, contributionNames, drop = TRUE])
+    weighted_mean <- stats::weighted.mean(tmp, w)
+
+    if (n_models > 1L) {
+      weighted_var <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+      weighted_sd <- sqrt(max(0, weighted_var))
+      ci <- 1.96 * weighted_sd / sqrt(n_models)
+    } else {
+      weighted_sd <- NA_real_
+      ci <- NA_real_
+    }
+
+    SUMMARY$mean[i] <- weighted_mean
+    SUMMARY$sd[i] <- weighted_sd
+    SUMMARY$ci[i] <- ci
+    SUMMARY$lowerCI[i] <- weighted_mean - ci
+    SUMMARY$upperCI[i] <- weighted_mean + ci
+  }
+
+  # Sort domains for visualization
+  # ============================================================
+  SUMMARY$domain <- factor(SUMMARY$domain, levels = SUMMARY$domain[order(SUMMARY$mean)])
+
+  # Plot weighted mean domain contributions
+  # ============================================================
+  if (isTRUE(plot)) {
+
+    FILLCOLOR <- if (length(domains) <= 10L) rep_len(COLORCODE, length(domains)) else COLORCODE[1L]
+
+    Plot <- ggplot2::ggplot(SUMMARY, ggplot2::aes(x = domain, y = mean)) +
+      ggplot2::geom_col(fill = FILLCOLOR, alpha = 0.8) +
+      ggplot2::coord_flip() +
+      ggplot2::ggtitle("") +
+      ggplot2::xlab(paste0(xlab, "\n")) +
+      ggplot2::ylab("\nWeighted Mean SHAP contributions of domains") +
+      ggplot2::theme_classic() +
+      ggplot2::theme(
+        plot.margin = ggplot2::margin(t = -0.5, r = 0.25, b = 0.25, l = 0.25, unit = "cm")
+      ) +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+
+    # Display between-model intervals when multiple models are available
+    if (n_models > 1L) {
+      Plot <- Plot +
+        ggplot2::geom_errorbar(
+          ggplot2::aes(ymin = lowerCI, ymax = upperCI),
+          width = 0.2, color = "#7A004BF0", alpha = 0.75, linewidth = 0.7
+        )
+    }
+
+    base::print(Plot)
+  }
+
+  if (isTRUE(print)) base::print(SUMMARY)
+
+  return(list(domainSummary = SUMMARY, domainRatio = domainRatio, plot = Plot))
 }
-
-
