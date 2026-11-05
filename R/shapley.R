@@ -67,7 +67,11 @@
 #'   standard deviation. The root mean square of the bootstrap between-model
 #'   standard deviations is used to construct a descriptive BMV interval.
 #'   The function also estimates bootstrap standard errors and percentile
-#'   95\% confidence intervals for WMSHAP and the between-model SD.
+#'   95\% confidence intervals for WMSHAP and the between-model SD. Note that
+#'   bootstrap is only reasonable for global and factor (domain) level WMSHAP,
+#'   and is not useful for individual-level (local) WMSHAP. Moreover, the current
+#'   implementation of bootstrap is not suitable for hierarchical data
+#'   (i.e., gpboost models).
 #'
 #' @param sample_size Integer. Number of rows in \code{newdata} used for SHAP assessment.
 #'                    Defaults to number of rows in the newdata. Decreasing this

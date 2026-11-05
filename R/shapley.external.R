@@ -73,7 +73,7 @@ shapley.external <- function(models, newdata, plot, performance_metric,
     stop("Invalid 'performance_metric'")
   }
 
-  if (!method %in% c("mean", "lowerCI", "bootstrap_lowerCI")) {
+  if (!method %in% c("mean", "lowerCI", "bootstrap_lowerCI", "bmv_lower")) {
     stop("Invalid 'method'")
   }
 

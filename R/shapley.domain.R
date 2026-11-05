@@ -2,8 +2,8 @@
 
 #' @title Compute and plot weighted mean SHAP contributions at group level (factors or domains)
 #' @description Aggregates SHAP contributions across user-defined domains (groups of features),
-#'              computes weighted mean and an 95% CI across models, and
-#'              returns a plot plus summary tables.
+#'              computes weighted means and descriptive between-model
+#'              intervals, and returns a plot plus summary tables.
 #' @param shapley Object of class \code{"shapley"}, as returned by the 'shapley' function
 #' @param domains Named list of character vectors. Each element name is a domain name;
 #'                each element value is a character vector of feature names assigned to that domain.
@@ -187,7 +187,7 @@ shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
     weighted_mean <- stats::weighted.mean(tmp, w)
 
     if (n_models > 1L) {
-      weighted_var <- sum(w * (tmp - weighted_mean)^2) / (sum(w) - 1)
+      weighted_var <- sum(w * (tmp - weighted_mean)^2) / sum(w)
       weighted_sd <- sqrt(max(0, weighted_var))
       ci <- 1.96 * weighted_sd / sqrt(n_models)
     } else {
@@ -224,7 +224,7 @@ shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
       ) +
       ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
 
-    # Display between-model intervals when multiple models are available
+    # Display descriptive between-model intervals when multiple models are available
     if (n_models > 1L) {
       Plot <- Plot +
         ggplot2::geom_errorbar(

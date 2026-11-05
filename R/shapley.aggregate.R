@@ -1,9 +1,9 @@
 
 #' @title Aggregate SHAP Values Across Multiple Models
 #'
-#' @description Computes global and local WMSHAP values, between-model
-#'   intervals, bootstrap confidence intervals, and Between-Model
-#'   Variability (BMV) statistics.
+#' @description Computes global and local WMSHAP values, descriptive
+#'   between-model intervals, observation-bootstrap confidence intervals,
+#'   and Between-Model Variability (BMV) statistics.
 #'
 #' @author E. F. Haghish
 #' @noRd
@@ -87,7 +87,7 @@ shapley.aggregate <- function(results_by_model,
     shap_columns[[i]] <- as.vector(t(values))
   }
 
-  # Global WMSHAP ratios and original between-model intervals
+  # Global WMSHAP ratios and descriptive between-model intervals
   # ============================================================
   feature_importance <- stats::setNames(lapply(seq_len(p), function(j) importance[j, ]), x)
 
@@ -128,7 +128,7 @@ shapley.aggregate <- function(results_by_model,
     summaryShaps$bmv_upper <- pmin(1, summaryShaps$mean + summaryShaps$bmv_ci)
   }
 
-  # Local WMSHAP contributions and between-model intervals
+  # Local WMSHAP contributions and descriptive between-model intervals
   # ============================================================
   local_interval <- shapley.interval(w = w, mean = local_mean, mean_square = local_sq)
 

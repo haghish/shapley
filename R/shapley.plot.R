@@ -1,10 +1,13 @@
 
 #' @title Plot Global WMSHAP Values
 #' @description Plot global feature importance using Weighted Mean SHAP ratios
-#'   or plot the individual-level weighted mean SHAP contributions.
+#'   or plot individual-level weighted mean SHAP contributions. The bootstrap
+#'   percentile confidence intervals are distinct from descriptive
+#'   between-model and BMV intervals.
 #' @param shapley An object returned by \code{shapley()}.
 #' @param plot Plot type: \code{"bar"} or \code{"wmshap"}.
-#' @param method Feature selection method: \code{"mean"} or \code{"lowerCI"}.
+#' @param method Feature selection method: \code{"mean"}, \code{"lowerCI"},
+#'   \code{"bootstrap_lowerCI"}, or \code{"bmv_lower"}.
 #' @param cutoff Minimum global WMSHAP ratio or lower confidence interval.
 #' @param top_n_features Optional number of features to plot.
 #' @param features Optional character vector of features to plot.
@@ -12,7 +15,8 @@
 #' @param scale_colour_gradient Optional colour vector for the contribution plot.
 #' @param labels Optional feature labels.
 #' @param interval Interval type to display: \code{"auto"}, \code{"bmv"},
-#'   \code{"bootstrap"}, and \code{"between_model"}.
+#'   \code{"bootstrap"}, \code{"between_model"}, \code{"both"},
+#'   or \code{"all"}.
 #' @return A ggplot object.
 #' @export
 
@@ -90,7 +94,7 @@ shapley.plot <- function(shapley,
     show_between <- interval %in% c("between_model", "all") ||
       (interval == "both" && !has_bmv)
 
-    # Original between-model interval
+    # Descriptive between-model interval
     # ============================================================
     if (show_between) {
       Plot <- Plot + ggplot2::geom_errorbar(
@@ -121,9 +125,9 @@ shapley.plot <- function(shapley,
     # ============================================================
     descriptions <- character(0)
 
-    if (show_bmv) descriptions <- c(descriptions, "Green: BMV interval")
-    if (show_bootstrap) descriptions <- c(descriptions, "Blue: bootstrap 95% CI")
-    if (show_between) descriptions <- c(descriptions, "Purple: original between-model interval")
+    if (show_bmv) descriptions <- c(descriptions, "Green: descriptive BMV interval")
+    if (show_bootstrap) descriptions <- c(descriptions, "Blue: bootstrap percentile 95% CI")
+    if (show_between) descriptions <- c(descriptions, "Purple: descriptive between-model interval")
 
     Plot <- Plot + ggplot2::labs(subtitle = paste(descriptions, collapse = "; "))
 
