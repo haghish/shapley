@@ -1,5 +1,15 @@
-# Internal SHAPLEY function.
-# ============================================================
+
+#' @title Compute Weighted Mean SHAP Values for Non-H2O Models
+#'
+#' @description
+#' An internal function that computes Weighted Mean SHAP (WMSHAP) values
+#' across multiple fitted R models using TreeSHAP, Kernel SHAP, shapr,
+#' or native GPBoost SHAP methods.
+#'
+#'
+#' @keywords internal
+#' @author E. F. Haghish
+#' @noRd
 
 shapley.external <- function(models, newdata, plot, performance_metric,
                              minimum_performance, method, cutoff, top_n_features,

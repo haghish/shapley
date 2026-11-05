@@ -10,7 +10,7 @@ shapley(
   background_data = NULL,
   pred_fun = NULL,
   performance_metric = "r2",
-  backend = "kernelshap",
+  backend = "auto",
   model_performance = NULL,
   sample_size = NULL,
   n_core = -1L,
@@ -48,8 +48,11 @@ Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f
 (classification metrics).}
 
 \item{backend}{Character. Specifies the backend used to compute SHAP values.
-Available options are \code{"kernelshap"} (default), \code{"h2o"} (only for h2o models),
-\code{"gpboost"} (only for gpboost models), \code{"treeshap"}, and
+the default is "auto", which detects the appropriate backend based on the
+models' class (assuming they are trained with a single learner).
+Alternative available options are \code{"kernelshap"} (universal), \code{"h2o"} (only for h2o models),
+\code{"gpboost"} (only for gpboost models), \code{"treeshap"}
+(for supported tree-based models), and
 \code{"shapr"}. Each backend uses a different method to estimate SHAP
 values. The \code{gpboost} and
 \code{shapr} packages are optional dependencies that must be installed

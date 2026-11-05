@@ -1,6 +1,3 @@
-# Internal SHAPLEY function.
-# Resolve the number of model-level SHAP workers.
-# ============================================================
 
 shapley.cores <- function(n_core = -1L) {
 

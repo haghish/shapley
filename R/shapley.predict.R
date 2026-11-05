@@ -1,12 +1,35 @@
-# Internal SHAPLEY function.
-# ============================================================
+#' @title Predict Outcomes from Machine Learning Models
+#'
+#' @description Generates predictions from fitted machine learning
+#'   models for computing SHAP values. Supports several model classes,
+#'   including ranger, randomForest, GLM, XGBoost, LightGBM, and GPBoost.
+#'   A user-defined prediction function can also be provided.
+#'   For classification models returning multiple probabilities,
+#'   the function selects the specified outcome class.
+#'
+#' @param model A fitted machine learning model.
+#' @param newdata Data frame containing the predictors and observations
+#'   for which predictions are required.
+#' @param pred_fun Optional function for generating model predictions.
+#'   Must accept \code{model} and \code{newdata} as arguments and return
+#'   numeric predictions.
+#' @param target_class Optional name or index of the outcome class
+#'   to predict. If NULL, the second class is selected when two
+#'   prediction columns are returned.
+#' @param model_id Optional model identifier used in error messages.
+#'
+#' @return A numeric vector containing one prediction per observation.
+#'
+#' @noRd
 
-shapley.predict <- function(model, newdata, pred_fun = NULL,
-                                    target_class = NULL, model_id = NULL) {
+shapley.predict <- function(model,
+                            newdata,
+                            pred_fun = NULL,
+                            target_class = NULL,
+                            model_id = NULL) {
   n <- nrow(newdata)
 
   # Use the prediction function defined by the user, when provided.
-  # ============================================================
   if (!is.null(pred_fun)) {
     prediction <- pred_fun(model, newdata)
   }

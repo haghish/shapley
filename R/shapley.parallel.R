@@ -1,7 +1,3 @@
-# Internal SHAPLEY function.
-# Compute SHAP contributions for different models in parallel.
-# ============================================================
-
 shapley.parallel <- function(tasks, worker, shared_data, n_core = -1L,
                              h2o = FALSE, dependencies = character()) {
 
@@ -42,8 +38,7 @@ shapley.parallel <- function(tasks, worker, shared_data, n_core = -1L,
   }
 
   # Export shared observations and the required internal functions once.
-  # Rebinding these helpers to the worker global environment also allows
-  # this implementation to work when the package is loaded with load_all().
+  # (rebind to global environment)
   # ============================================================
   helper_names <- unique(dependencies)
   if (any(!nzchar(helper_names))) stop("Invalid parallel helper name")
@@ -65,7 +60,6 @@ shapley.parallel <- function(tasks, worker, shared_data, n_core = -1L,
                           envir = helper_env)
 
   # Each task contains one model (or one H2O model ID).
-  # Results retain the original order, even with load balancing.
   # ============================================================
   run.one.model <- function(task) {
     worker <- get(".shapley_model_worker", envir = .GlobalEnv)

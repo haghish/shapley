@@ -4,7 +4,7 @@
 #'              (2) `top_n_features`, or (3) WMSHAP cutoff for "mean" or "lowerCI".
 #' @param shapley shapley object
 #' @param method Character. Specifies statistic used for thresholding.
-#'               Either \code{"mean"} or \code{"lowerCI"} (default) should be specified.
+#'               Either \code{"mean"} (default) or \code{"lowerCI"} should be specified.
 #'               Ignored if `top_n_features` is provided.
 #' @param cutoff Numeric. Cutoff for thresholding on `method`.
 #'               Default is zero, which means that all
@@ -20,11 +20,10 @@
 #'   \item{mean}{Numeric vector of mean SHAP values aligned with `features`.}
 #' }
 #' @author E. F. Haghish
-
-
+#' @noRd
 
 feature.selection <- function(shapley,
-                              method = "lowerCI",
+                              method = "mean",
                               cutoff=0.0,
                               top_n_features=NULL,
                               features = NULL) {

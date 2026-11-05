@@ -1,5 +1,24 @@
-# Internal SHAPLEY function.
-# ============================================================
+#' @title Compute Weighted Intervals Across Model Set
+#'
+#' @description Computes the weighted mean, standard deviation, and
+#'   interval width of SHAP values across multiple models using
+#'   normalized model-performance weights.
+#'
+#' @param values Optional numeric vector containing the SHAP values
+#'   or feature importance estimates from individual models.
+#' @param w Numeric vector of model-performance weights. Weights are
+#'   normalized to sum to one.
+#' @param mean Optional numeric value, vector, or matrix containing
+#'   precomputed weighted means.
+#' @param mean_square Optional numeric value, vector, or matrix containing
+#'   precomputed weighted means of squared values.
+#'
+#' @return A named numeric vector containing \code{mean}, \code{sd},
+#'   and \code{ci}, or a list containing these components when
+#'   matrix inputs are provided.
+#'
+#' @noRd
+
 
 shapley.interval <- function(values = NULL, w, mean = NULL, mean_square = NULL) {
 

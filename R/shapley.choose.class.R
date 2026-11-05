@@ -1,5 +1,27 @@
-# Internal SHAPLEY function.
-# ============================================================
+#' @title Select the Target Class for SHAP Contributions
+#'
+#' @description
+#' An internal function that selects SHAP contributions for a specified
+#' prediction class or output when a model returns multiple sets of SHAP
+#' values. The function supports named and position-based selection and
+#' automatically selects the positive class for binary classification
+#' models when no target class is specified.
+#'
+#' When \code{target_class} is specified, the function first attempts
+#' to match it to the names of the available outputs. If no matching
+#' name is found and \code{target_class} represents a positive integer,
+#' the corresponding list element is selected by its position.
+#' An error is raised if the requested class or output is unavailable.
+#'
+#' When \code{target_class = NULL}, the function automatically selects
+#' the first output if only one is available, or the second output
+#' if exactly two are available, treating the second output as the
+#' positive class. For models with more than two outputs,
+#' \code{target_class} must be specified explicitly.
+#'
+#' @keywords internal
+#' @noRd
+
 
 shapley.choose.class <- function(shaps, target_class, model_id) {
   if (!is.list(shaps) || is.data.frame(shaps)) return(shaps)

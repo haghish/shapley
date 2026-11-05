@@ -1,23 +1,35 @@
-#' @title aggregate shap values for global-level computation
+#' @title Aggregate SHAP Values Across Multiple Models
+#'
+#' @description Computes global and local Weighted Mean SHAP (WMSHAP)
+#'   values across multiple models using normalized model-performance
+#'   weights. The function also estimates between-model variability,
+#'   calculates intervals, and selects important features.
 #' @importFrom stats setNames
 #' @importFrom utils head
 #' @author E. F. Haghish
 #' @noRd
 
-shapley.aggregate <- function(results_by_model, included, w, newdata,
-                              method = "mean", cutoff = 0.01,
+shapley.aggregate <- function(results_by_model,
+                              included,
+                              w,
+                              newdata,
+                              method = "mean",
+                              cutoff = 0.01,
                               top_n_features = NULL) {
 
   x <- names(newdata)
   n <- nrow(newdata)
   p <- length(x)
   m <- length(included)
+
   if (m < 2L || length(w) != m || length(results_by_model) != m) {
     stop("WMSHAP requires at least two models and matching performance weights")
   }
+
   if (!method %in% c("mean", "lowerCI")) {
     stop("'method' must be 'mean' or 'lowerCI'")
   }
+
   if (!is.null(top_n_features) &&
       (length(top_n_features) != 1L || !is.numeric(top_n_features) ||
        !is.finite(top_n_features) || top_n_features < 1 ||

@@ -1,12 +1,24 @@
-# Internal SHAPLEY function.
-# Compute native SHAP values for the boosted-tree component of GPBoost.
-# GPModel random effects and Gaussian-process effects are NOT included.
-# ============================================================
+#' @title Compute SHAP Values for GPBoost Models
+#'
+#' @description Computes SHAP values for the boosted-tree component of
+#'   a fitted GPBoost model using its native SHAP implementation.
+#'   Random effects and Gaussian process contributions are not included.
+#'
+#' @param model A fitted GPBoost model of class \code{"gpb.Booster"}.
+#' @param newdata Data frame containing the observations and numeric
+#'   predictors for which SHAP values are computed.
+#' @param model_id Optional model identifier used in error messages.
+#'
+#' @return A numeric matrix containing SHAP values for each observation
+#'   and predictor.
+#'
+#' @noRd
+
 
 shapley.gpboost <- function(model, newdata, model_id = NULL) {
 
   if (!inherits(model, "gpb.Booster")) {
-    stop("The gpboost backend requires a fitted 'gpb.Booster' object")
+    stop("The 'gpboost' backend requires a fitted 'gpb.Booster' object")
   }
   if (!requireNamespace("gpboost", quietly = TRUE)) {
     stop("The 'gpboost' backend requires the optional package 'gpboost'. ",

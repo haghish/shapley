@@ -1,8 +1,12 @@
-# Internal SHAPLEY function.
-# ============================================================
 
-shapley.detect <- function(model, shap_backend, background_data,
-                                   target_class = NULL) {
+#' @title Automatically Detect the Appropriate SHAP Backend
+#'
+#' @noRd
+
+shapley.detect <- function(model,
+                           shap_backend,
+                           background_data,
+                           target_class = NULL) {
   # shapr is an explicit alternative. It is not selected automatically,
   # because conditional SHAP and marginal SHAP are different quantities.
   if (shap_backend != "auto") {

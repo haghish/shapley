@@ -1,6 +1,95 @@
-# Internal SHAPLEY function.
-# Fast H2O SHAP contributions and common WMSHAP aggregation.
-# ============================================================
+#' @title Compute Weighted Mean SHAP Values for H2O Models
+#'
+#' @description
+#' Computes Weighted Mean SHAP (WMSHAP) values and associated intervals
+#' across multiple H2O models, including models trained through H2O grid
+#' search, AutoML, or stacked ensembles.
+#'
+#' @details
+#' SHAP contributions are obtained directly from H2O using
+#' \code{h2o::h2o.predict_contributions()}. For each model, the absolute
+#' SHAP contributions are averaged across observations and normalized
+#' to obtain feature importance ratios. These ratios are then combined
+#' across models using normalized performance weights to calculate
+#' WMSHAP values and associated between-model intervals.
+#'
+#' The function also calculates performance-weighted SHAP contributions
+#' for individual observations. All models are evaluated on the same
+#' observations to ensure that their contributions are comparable.
+#' Models with performance estimates at or below the specified minimum
+#' are excluded from the analysis.
+#'
+#' Important features can be selected based on their mean WMSHAP ratios,
+#' the lower bounds of their intervals, or a specified number of
+#' top-ranked features. SHAP contributions can be computed in parallel
+#' across models to improve computational efficiency.
+#'
+#' @param models An H2O AutoML object, H2O grid object, \code{autoEnsemble}
+#'   object, or character vector of H2O model IDs. At least
+#'   \code{n_models} models must be available for the analysis.
+#'
+#' @param newdata An \code{H2OFrame} containing the observations used to
+#'   compute SHAP contributions. The data must contain all predictors
+#'   required by the supplied models.
+#'
+#' @param plot Logical. If \code{TRUE} (default), generates a bar plot
+#'   of global WMSHAP ratios and their intervals using
+#'   \code{shapley.plot()}.
+#'
+#' @param performance_metric Character. Performance metric used to
+#'   weight models. Available options are \code{"r2"} (default),
+#'   \code{"aucpr"}, \code{"auc"}, and \code{"f2"}. The latter three
+#'   are intended for classification models.
+#'
+#' @param performance_type Character. Specifies which model performance
+#'   estimates are used for weighting. Available options are
+#'   \code{"train"}, \code{"valid"}, and \code{"xval"} (default),
+#'   corresponding to training, validation, and cross-validation
+#'   performance, respectively. The requested estimates must be
+#'   available for the fitted models.
+#'
+#' @param minimum_performance Numeric. Minimum model performance
+#'   required for inclusion in the analysis. Models with performance
+#'   estimates at or below this threshold are excluded. The default
+#'   is \code{0}.
+#'
+#' @param method Character. Method used for selecting important features.
+#'   Available options are \code{"mean"} (default), which selects
+#'   features based on their mean WMSHAP ratios, and \code{"lowerCI"},
+#'   which uses the lower bounds of their between-model intervals.
+#'
+#' @param cutoff Numeric. WMSHAP cutoff used to identify and select
+#'   important features. The recommended threshold is 1 divided by
+#'   the number of predictors in the model. The default is \code{0.01}.
+#'
+#' @param top_n_features Integer or \code{NULL}. Number of top-ranked
+#'   features to select based on their mean WMSHAP ratios. If
+#'   \code{NULL} (default), features are selected according to
+#'   \code{method} and \code{cutoff}. When specified, this argument
+#'   overrides the cutoff-based selection.
+#'
+#' @param n_models Integer. Minimum number of models required for
+#'   computing WMSHAP values after excluding models that do not meet
+#'   the performance threshold. The default is \code{10}. This
+#'   argument does not limit the number of models included.
+#'
+#' @param sample_size Integer or \code{NULL}. Number of observations
+#'   randomly sampled from \code{newdata} for computing SHAP values.
+#'   If \code{NULL} (default), all observations are used. The same
+#'   sampled observations are evaluated across all models.
+#'
+#' @param n_core Integer. Number of parallel R workers used to compute
+#'   SHAP contributions across models. The default is \code{1},
+#'   which performs the computations sequentially. A positive integer
+#'   specifies the number of workers, whereas \code{-1} uses all
+#'   detected physical CPU cores, limited by the number of models.
+#'
+#' @return An object of class \code{"shapley"}
+#'
+#'
+#' @keywords internal
+#' @author E. F. Haghish
+#' @noRd
 
 shapley.h2o <- function(models,
                         newdata,
@@ -15,8 +104,8 @@ shapley.h2o <- function(models,
                         sample_size = NULL,
                         n_core = 1L) {
 
-  if (!performance_metric %in% c("r2", "aucpr", "auc", "f2")) {
-    stop("'performance_metric' must be 'r2', 'aucpr', 'auc', or 'f2'")
+  if (!performance_metric %in% c("r2", "aucpr", "auc", "f2", "mcc")) {
+    stop("'performance_metric' must be 'r2', 'aucpr', 'auc', 'mcc', or 'f2'")
   }
   if (!performance_type %in% c("train", "valid", "xval")) {
     stop("'performance_type' must be 'train', 'valid', or 'xval'")

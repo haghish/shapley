@@ -1,5 +1,65 @@
-# Internal SHAPLEY function.
-# ============================================================
+#' @title Compute SHAP Values Using a Selected Backend
+#'
+#' @description
+#' Computes observation-level SHAP contributions
+#' for a single fitted R model using a specified SHAP backend.
+#'
+#' @param model A fitted R model
+#'
+#' @param newdata A data frame containing the observations for which
+#'   SHAP contributions are computed.
+#'
+#' @param background_data A data frame containing reference observations
+#'   used for computing SHAP values. This dataset is used to construct
+#'   the unified tree representation for TreeSHAP, define the reference
+#'   distribution for Kernel SHAP, and estimate feature dependence and
+#'   baseline predictions for shapr. This argument is not used by
+#'   native GPBoost SHAP or H2O.
+#'
+#' @param shap_backend Character. Specifies the backend used to compute
+#'   SHAP values.
+#'
+#' @param pred_fun A user-defined prediction function of the form
+#'   \code{function(model, newdata)}. The function should return
+#'   numeric predictions for the supplied observations. It is used
+#'   by Kernel SHAP and shapr when provided. If \code{NULL},
+#'   the default prediction method is used when supported.
+#'
+#' @param target_class Character, numeric, or \code{NULL}. Specifies
+#'   the prediction class or output for which SHAP contributions
+#'   are computed. When \code{NULL}, the second output is selected
+#'   for binary classification models returning two outputs.
+#'   For models with more than two outputs, the target class
+#'   must be specified explicitly.
+#'
+#' @param model_id Character. Unique identifier of the fitted model,
+#'   used to identify the model in error and warning messages.
+#'
+#' @param shapr_approach Character vector. Specifies the method used
+#'   by \code{shapr::explain()} to estimate conditional feature
+#'   distributions. The default is \code{"empirical"}. This argument
+#'   is used only when \code{shap_backend = "shapr"}.
+#'
+#' @param shapr_phi0 Numeric or \code{NULL}. Baseline prediction used
+#'   by the shapr backend. If \code{NULL} (default), the baseline
+#'   is calculated as the mean model prediction over
+#'   \code{background_data}. Otherwise, a single finite numeric
+#'   value must be provided.
+#'
+#' @param shapr_n_MC_samples Integer. Number of Monte Carlo samples
+#'   used by \code{shapr::explain()}. The default is \code{1000L}.
+#'   This argument is used only when \code{shap_backend = "shapr"}.
+#'
+#' @return A numeric matrix containing observation-level SHAP
+#'   contributions, with observations in rows and predictors in
+#'   columns.
+#'
+#' @seealso \code{\link{shapley}}, \code{\link{shapley.external}}
+#'
+#' @keywords internal
+#' @noRd
+#' @author E. F. Haghish
+
 
 shapley.compute <- function(model, newdata, background_data,
                                     shap_backend, pred_fun, target_class,
@@ -8,18 +68,20 @@ shapley.compute <- function(model, newdata, background_data,
                                     shapr_n_MC_samples = 1000L) {
   x <- names(newdata)
 
-  # STEP 1: Compute GPBoost native SHAP for the boosted-tree component.
+  # Compute GPBoost native SHAP for the boosted-tree component.
   # ============================================================
   if (shap_backend == "gpboost") {
     values <- shapley.gpboost(model, newdata, model_id = model_id)
   }
 
-  # STEP 2: Compute TreeSHAP values, if requested.
+  # Compute TreeSHAP values, if requested.
   # ============================================================
   else if (shap_backend == "treeshap") {
     if (!requireNamespace("treeshap", quietly = TRUE)) {
       stop("Package 'treeshap' must be installed")
     }
+
+    # the ranger package can be problematic
     if (inherits(model, "ranger") && !identical(model$treetype, "Regression")) {
       supported_probability <- identical(model$treetype, "Probability estimation") &&
         utils::packageVersion("treeshap") >= "0.4.0" &&
@@ -44,7 +106,7 @@ shapley.compute <- function(model, newdata, background_data,
     values <- out$shaps
   }
 
-  # STEP 2: Compute Kernel SHAP values, if requested.
+  # Compute Kernel SHAP values, if requested.
   # ============================================================
   else if (shap_backend == "kernelshap") {
     if (!requireNamespace("kernelshap", quietly = TRUE)) {
@@ -87,7 +149,7 @@ shapley.compute <- function(model, newdata, background_data,
     values <- shapley.choose.class(out$S, target_class, model_id)
   }
 
-  # STEP 3: Compute dependence-aware SHAP values using shapr.
+  # Compute dependence-aware SHAP values using shapr.
   # ============================================================
   else if (shap_backend == "shapr") {
     if (!requireNamespace("shapr", quietly = TRUE)) {
@@ -147,7 +209,7 @@ shapley.compute <- function(model, newdata, background_data,
   }
   else stop("Invalid SHAP backend: ", shap_backend)
 
-  # STEP 4: Standardize the output for WMSHAP computation.
+  # Standardize the output for WMSHAP computation.
   # ============================================================
   values <- as.matrix(values)
   if (!is.numeric(values) || nrow(values) != nrow(newdata)) {
