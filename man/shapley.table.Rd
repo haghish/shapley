@@ -13,7 +13,8 @@ shapley.table(
   dict = NULL,
   markdown.table = TRUE,
   split.tables = 120,
-  split.cells = 50
+  split.cells = 50,
+  interval = "auto"
 )
 }
 \arguments{
@@ -54,6 +55,9 @@ Default is \code{120}.}
 
 \item{split.cells}{Integer. Controls cell splitting in \code{pander()}.
 Default is \code{50}.}
+
+\item{interval}{Interval type to display: \code{"auto"}, \code{"bmv"},
+\code{"bootstrap"}, and \code{"between_model"}.}
 }
 \value{
 If \code{markdown.table = TRUE}, returns a markdown table (invisibly)

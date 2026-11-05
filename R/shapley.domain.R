@@ -1,3 +1,23 @@
+# ??? The running speed of this function can be improved
+
+#' @title Compute and plot weighted mean SHAP contributions at group level (factors or domains)
+#' @description Aggregates SHAP contributions across user-defined domains (groups of features),
+#'              computes weighted mean and an 95% CI across models, and
+#'              returns a plot plus summary tables.
+#' @param shapley Object of class \code{"shapley"}, as returned by the 'shapley' function
+#' @param domains Named list of character vectors. Each element name is a domain name;
+#'                each element value is a character vector of feature names assigned to that domain.
+#' @param plot Logical. If \code{TRUE}, a bar plot of domain WMSHAP contributions is created.
+#' @param colorcode Character vector for specifying the color names for each domain in the plot.
+#' @param print Logical. If TRUE, prints the domain WMSHAP summary table.
+#' @param xlab Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")
+#' @importFrom stats na.omit aggregate formula
+#' @importFrom h2o h2o.shap_summary_plot h2o.getModel
+#' @importFrom ggplot2 theme guides guide_legend guide_colourbar
+#'             margin theme_classic ylab xlab ggtitle
+#'
+#' @author E. F. Haghish
+#' @export
 
 shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
                            colorcode = NULL, xlab = "Domains") {
@@ -23,9 +43,27 @@ shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
 
   # Variable definitions
   # ============================================================
-  COLORCODE <- c("#855C75FF", "#D9AF6BFF", "#AF6458FF", "#736F4CFF",
-                 "#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF",
-                 "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF")
+  # COLORCODE <- c(
+  #   "#855C75FF", "#D9AF6BFF", "#AF6458FF", "#736F4CFF",
+  #   "#526A83FF", "#625377FF", "#68855CFF", "#9C9C5EFF",
+  #   "#A06177FF", "#8C785DFF", "#467378FF", "#7C7C7CFF",
+  #   "#B07B52FF", "#5C8D85FF", "#9470A1FF", "#839B5DFF",
+  #   "#C17683FF", "#5D86A9FF", "#A08D48FF", "#637D63FF",
+  #   "#B48B9BFF", "#9A6B45FF", "#7F90B4FF", "#AD805FFF",
+  #   "#7C9B8DFF", "#B17A9EFF", "#9E9C78FF", "#5A788DFF",
+  #   "#BA907AFF", "#8A819DFF"
+  # )
+
+  COLORCODE <- c(
+    "#625377FF", "#D9AF6BFF", "#5C8D85FF", "#AF6458FF",
+    "#7F90B4FF", "#736F4CFF", "#B17A9EFF", "#839B5DFF",
+    "#526A83FF", "#BA907AFF", "#7C7C7CFF", "#A08D48FF",
+    "#9A6B45FF", "#467378FF", "#8A819DFF", "#855C75FF",
+    "#637D63FF", "#C17683FF", "#9E9C78FF", "#8C785DFF",
+    "#5D86A9FF", "#9470A1FF", "#7C9B8DFF", "#B48B9BFF",
+    "#A06177FF", "#B07B52FF", "#9C9C5EFF", "#5A788DFF",
+    "#68855CFF", "#AD805FFF"
+  )
 
   if (!is.null(colorcode)) {
     if (!is.character(colorcode) || length(colorcode) == 0L) {
@@ -174,7 +212,7 @@ shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
 
     FILLCOLOR <- if (length(domains) <= 10L) rep_len(COLORCODE, length(domains)) else COLORCODE[1L]
 
-    Plot <- ggplot2::ggplot(SUMMARY, ggplot2::aes(x = domain, y = mean)) +
+    Plot <- ggplot2::ggplot(SUMMARY, ggplot2::aes(x = !!as.name("domain"), y = !!as.name("mean"))) +
       ggplot2::geom_col(fill = FILLCOLOR, alpha = 0.8) +
       ggplot2::coord_flip() +
       ggplot2::ggtitle("") +
@@ -190,7 +228,7 @@ shapley.domain <- function(shapley, domains, plot = TRUE, print = FALSE,
     if (n_models > 1L) {
       Plot <- Plot +
         ggplot2::geom_errorbar(
-          ggplot2::aes(ymin = lowerCI, ymax = upperCI),
+          ggplot2::aes(ymin = !!as.name("lowerCI"), ymax = !!as.name("upperCI")),
           width = 0.2, color = "#7A004BF0", alpha = 0.75, linewidth = 0.7
         )
     }

@@ -13,7 +13,8 @@ shapley.plot(
   features = NULL,
   legendstyle = "continuous",
   scale_colour_gradient = NULL,
-  labels = NULL
+  labels = NULL,
+  interval = "auto"
 )
 }
 \arguments{
@@ -34,6 +35,9 @@ shapley.plot(
 \item{scale_colour_gradient}{Optional colour vector for the contribution plot.}
 
 \item{labels}{Optional feature labels.}
+
+\item{interval}{Interval type to display: \code{"auto"}, \code{"bmv"},
+\code{"bootstrap"}, and \code{"between_model"}.}
 }
 \value{
 A ggplot object.

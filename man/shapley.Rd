@@ -9,16 +9,18 @@ shapley(
   newdata,
   background_data = NULL,
   pred_fun = NULL,
+  model_performance = NULL,
   performance_metric = "r2",
   backend = "auto",
-  model_performance = NULL,
-  sample_size = NULL,
+  sample_size = nrow(newdata),
+  bootstrap = 0L,
   n_core = -1L,
   cutoff = 0,
   plot = TRUE,
   top_n_features = NULL,
   target_class = NULL,
   shapr_method = "empirical",
+  shapr_monte_carlo = 1000L,
   ...
 )
 }
@@ -43,8 +45,14 @@ shapr package requires one numeric prediction per observation, selected using
 \code{target_class} when necessary. This argument is ignored for models trained
 with 'h2o' package, or when the 'treeshap' package is defined as the backend.}
 
+\item{model_performance}{Named numeric vector containing one model performance
+estimate per non-H2O model. Use comparable cross-validation estimates,
+such as AUCPR, for all models. Names should correspond to model list names
+(see the examples).}
+
 \item{performance_metric}{Character. Performance metric used to weight models.
-Options are \code{"r2"} (regression), \code{"aucpr"}, \code{"auc"}, and \code{"f2"}
+Options are \code{"r2"} (regression), \code{"aucpr"},
+\code{"auc"}, and \code{"f2"}
 (classification metrics).}
 
 \item{backend}{Character. Specifies the backend used to compute SHAP values.
@@ -60,15 +68,22 @@ separately. Native GPBoost SHAP values explain only the boosted-tree
 component, excluding Gaussian-process and random effects.
 Note that these backends compute SHAP values in different ways.}
 
-\item{model_performance}{Named numeric vector containing one model performance
-estimate per non-H2O model. Use comparable cross-validation estimates,
-such as AUCPR, for all models. Names should correspond to model list names
-(see the examples).}
-
 \item{sample_size}{Integer. Number of rows in \code{newdata} used for SHAP assessment.
-                 Defaults to all rows. Reducing this can speed up development runs.
+                 Defaults to number of rows in the newdata. Decreasing this
+                 can increase the computation speed,
+                 but decreases accuracy and stability of WMSHAP.
                  Note that for 'shapr' package, this argument defines of Monte Carlo samples
 passed to \code{shapr::explain()}.}
+
+\item{bootstrap}{Integer. Number of observation-level bootstrap replications
+used to estimate sampling variability in WMSHAP and Between-Model Variability
+(BMV). The default is \code{0L}, which disables bootstrapping. For each
+bootstrap sample, the function recalculates the model-specific SHAP
+importance ratios, their performance-weighted mean, and between-model
+standard deviation. The root mean square of the bootstrap between-model
+standard deviations is used to construct a descriptive BMV interval.
+The function also estimates bootstrap standard errors and percentile
+95\% confidence intervals for WMSHAP and the between-model SD.}
 
 \item{n_core}{Integer. Number of parallel R workers for computing SHAP
 contributions across fitted models. The default \code{-1} uses all
@@ -100,6 +115,11 @@ Available methods are \code{"empirical"}, \code{"gaussian"},
 \code{"regression_surrogate"}. The default is
 \code{"empirical"}.}
 
+\item{shapr_monte_carlo}{Integer. Number of Monte Carlo samples used to estimate
+SHAP values when \code{backend = "shapr"}. Larger values may improve the
+precision of SHAP estimates but increase computation time. The default
+is \code{1000L}. This argument is ignored when other SHAP backends are used.}
+
 \item{...}{arguments that are used internally for compatibility with older
 versions}
 }
@@ -112,7 +132,7 @@ An object of class \code{"shapley"} (a named list) containing:
   \item{weights}{Legacy rescaled model weights (sum equals the number of models).}
   \item{model_weights}{Normalized model-performance weights (sum equals 1).}
   \item{results}{Data frame of row-level SHAP contributions across models.}
-  \item{summaryShaps}{Data frame of global WMSHAP ratios and intervals.}
+  \item{summaryShaps}{Data frame of global WMSHAP ratios and intervals as well as bootstrap summary statistics, if applied.}
   \item{selectedFeatures}{Character vector of selected important features.}
   \item{feature_importance}{List of feature importance values by model.}
   \item{contributionPlot}{Plot data for local SHAP contributions.}
@@ -244,7 +264,7 @@ scores <- collect_metrics(cv) |>
   dplyr::arrange(dplyr::desc(mean))
 
 # 4: select the near-optimal configurations. for example,
-# retain top models with at least 98\% of the best mean AUCPR.
+# retain top models with at least 98\\% of the best mean AUCPR.
 near <- scores |>
   dplyr::filter(mean >= 0.98 * max(scores$mean))
 

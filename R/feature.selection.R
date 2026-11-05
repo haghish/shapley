@@ -33,6 +33,7 @@
 #' @author E. F. Haghish
 #' @noRd
 
+
 feature.selection <- function(shapley,
                               method = "mean",
                               cutoff = 0.0,
@@ -43,13 +44,11 @@ feature.selection <- function(shapley,
   # ============================================================
   if (is.null(shapley[["summaryShaps"]]) ||
       is.null(shapley[["contributionPlot"]][["data"]])) {
-    stop("shapley must include 'summaryShaps' and 'contributionPlot$data'",
-         call. = FALSE)
+    stop("shapley must include 'summaryShaps' and 'contributionPlot$data'", call. = FALSE)
   }
 
   if (length(shapley[["ids"]]) < 1L) {
-    stop("at least 1 model must be included in the shapley object",
-         call. = FALSE)
+    stop("at least 1 model must be included in the shapley object", call. = FALSE)
   }
 
   # Extract original data
@@ -57,9 +56,10 @@ feature.selection <- function(shapley,
   summary <- shapley$summaryShaps
   DATA <- shapley$contributionPlot$data
 
-  # Restrict selection to specified candidate features
+  # Restrict the analysis to specified candidate features
   # ============================================================
   if (!is.null(features)) {
+
     if (!is.character(features) || anyNA(features)) {
       stop("'features' must be a character vector", call. = FALSE)
     }
@@ -67,38 +67,41 @@ feature.selection <- function(shapley,
     summary <- summary[as.character(summary$feature) %in% features, , drop = FALSE]
   }
 
-  # Select features based on the specified criteria
+  # Select the top N features
   # ============================================================
   if (!is.null(top_n_features)) {
-    if (!is.numeric(top_n_features) ||
-        length(top_n_features) != 1L ||
-        !is.finite(top_n_features) ||
-        top_n_features < 1 ||
+
+    if (!is.numeric(top_n_features) || length(top_n_features) != 1L ||
+        !is.finite(top_n_features) || top_n_features < 1L ||
         top_n_features != floor(top_n_features)) {
       stop("'top_n_features' must be a positive integer", call. = FALSE)
     }
 
-    # Select top N features from the candidate set
     summary <- summary[order(summary$mean, decreasing = TRUE), , drop = FALSE]
     summary <- utils::head(summary, top_n_features)
+
   } else {
-    if (length(method) != 1L ||
-        is.na(method) ||
-        !method %in% c("mean", "lowerCI")) {
-      stop("method must be one of 'mean' or 'lowerCI'", call. = FALSE)
+
+    # Select features based on their mean or lower interval bound
+    # ============================================================
+
+    if (length(method) != 1L || is.na(method) ||
+        !method %in% c("mean", "lowerCI", "bootstrap_lowerCI", "bmv_lower")) {
+      stop("Invalid feature-selection method", call. = FALSE)
     }
 
-    if (!is.numeric(cutoff) ||
-        length(cutoff) != 1L ||
-        !is.finite(cutoff)) {
+    if (!is.numeric(cutoff) || length(cutoff) != 1L || !is.finite(cutoff)) {
       stop("'cutoff' must be a finite numeric value", call. = FALSE)
     }
 
     if (method == "lowerCI" && length(shapley[["ids"]]) == 1L) {
-      stop("shapley object includes a single model and lowerCI cannot be used", call. = FALSE)
+      stop("A single-model analysis cannot use lowerCI", call. = FALSE)
     }
 
-    # Apply cutoff to the requested statistic
+    if (!method %in% names(summary)) {
+      stop("The selected statistic is unavailable in summaryShaps", call. = FALSE)
+    }
+
     statistic <- summary[[method]]
     keep <- !is.na(statistic) & statistic > cutoff
     summary <- summary[keep, , drop = FALSE]
@@ -108,18 +111,14 @@ feature.selection <- function(shapley,
   # ============================================================
   summary <- summary[order(summary$mean, decreasing = TRUE), , drop = FALSE]
 
-  # Derive feature names and means from the final selection
-  # ============================================================
   selected_features <- as.character(summary$feature)
   selected_means <- summary$mean
 
-  # Update shapley object consistently
+  # Update the shapley object
   # ============================================================
   shapley$summaryShaps <- summary
   shapley$contributionPlot$data <- DATA[DATA$feature %in% selected_features, , drop = FALSE]
 
-  # Return results
-  # ============================================================
   return(list(
     shapley = shapley,
     features = selected_features,

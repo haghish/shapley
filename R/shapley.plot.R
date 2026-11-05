@@ -1,3 +1,4 @@
+
 #' @title Plot Global WMSHAP Values
 #' @description Plot global feature importance using Weighted Mean SHAP ratios
 #'   or plot the individual-level weighted mean SHAP contributions.
@@ -10,8 +11,12 @@
 #' @param legendstyle Legend type used for the contribution plot.
 #' @param scale_colour_gradient Optional colour vector for the contribution plot.
 #' @param labels Optional feature labels.
+#' @param interval Interval type to display: \code{"auto"}, \code{"bmv"},
+#'   \code{"bootstrap"}, and \code{"between_model"}.
 #' @return A ggplot object.
 #' @export
+
+
 shapley.plot <- function(shapley,
                          plot = "bar",
                          method = "mean",
@@ -20,99 +25,142 @@ shapley.plot <- function(shapley,
                          features = NULL,
                          legendstyle = "continuous",
                          scale_colour_gradient = NULL,
-                         labels = NULL) {
+                         labels = NULL,
+                         interval = "auto") {
 
+  # Validate arguments
+  # ============================================================
   if (!inherits(shapley, "shapley")) stop("shapley object must be of class 'shapley'")
+
   if (plot == "shap") {
     plot <- "wmshap"
     warning("plot = 'shap' is deprecated; use plot = 'wmshap'.", call. = FALSE)
   }
+
   if (!plot %in% c("bar", "wmshap")) stop("plot must be 'bar' or 'wmshap'")
-  if (!method %in% c("mean", "lowerCI")) stop("method must be 'mean' or 'lowerCI'")
 
-  # STEP 1: Select the features to be plotted.
+  if (!method %in% c("mean", "lowerCI", "bootstrap_lowerCI", "bmv_lower")) {
+    stop("Invalid feature-selection method", call. = FALSE)
+  }
+
+  interval <- match.arg(interval, c("auto", "bmv", "bootstrap", "between_model", "both", "all"))
+
+  has_bootstrap <- all(c("bootstrap_lowerCI", "bootstrap_upperCI") %in% names(shapley$summaryShaps))
+  has_bmv <- all(c("bmv_lower", "bmv_upper") %in% names(shapley$summaryShaps))
+
+  if (interval == "auto") interval <- if (has_bmv) "bmv" else "between_model"
+
+  if (interval %in% c("bmv", "all") && !has_bmv) {
+    stop("BMV is unavailable. Enable bootstrapping in shapley().", call. = FALSE)
+  }
+
+  if (interval %in% c("bootstrap", "both", "all") && !has_bootstrap) {
+    stop("Bootstrap intervals are unavailable. Enable bootstrapping in shapley().", call. = FALSE)
+  }
+
+  # Select features
   # ============================================================
-  if (is.null(shapley$localShaps)) {
-    select <- feature.selection(shapley = shapley, method = method,
-                                cutoff = cutoff, top_n_features = top_n_features,
-                                features = features)
-    shapley <- select$shapley
-  }
-  else {
-    summaryShaps <- shapley$summaryShaps
-    if (!is.null(features)) {
-      summaryShaps <- summaryShaps[summaryShaps$feature %in% features, , drop = FALSE]
-    }
-    else if (!is.null(top_n_features)) {
-      summaryShaps <- head(summaryShaps[order(summaryShaps$mean, decreasing = TRUE), , drop = FALSE],
-                           top_n_features)
-    }
-    else if (method == "lowerCI") {
-      summaryShaps <- summaryShaps[!is.na(summaryShaps$lowerCI) &
-                                   summaryShaps$lowerCI > cutoff, , drop = FALSE]
-    }
-    else {
-      summaryShaps <- summaryShaps[summaryShaps$mean > cutoff, , drop = FALSE]
-    }
-    shapley$summaryShaps <- summaryShaps
-  }
-  if (nrow(shapley$summaryShaps) == 0L) stop("No features meet the selection criteria")
+  select <- feature.selection(shapley = shapley, method = method, cutoff = cutoff,
+                              top_n_features = top_n_features, features = features)
 
-  # STEP 2: Plot the global WMSHAP ratios.
+  shapley <- select$shapley
+
+  if (nrow(shapley$summaryShaps) == 0L) {
+    stop("No features meet the selection criteria", call. = FALSE)
+  }
+
+  # Plot global WMSHAP ratios
   # ============================================================
   if (plot == "bar") {
-    shapley$summaryShaps$feature <- factor(
-      shapley$summaryShaps$feature,
-      levels = shapley$summaryShaps$feature[order(shapley$summaryShaps$mean)])
-    ftr <- shapley$summaryShaps$feature
-    nrmm <- shapley$summaryShaps$mean
-    lci <- shapley$summaryShaps$lowerCI
-    uci <- shapley$summaryShaps$upperCI
-    Plot <- ggplot2::ggplot(data = NULL,
-                            ggplot2::aes(x = ftr, y = nrmm)) +
+
+    summary <- shapley$summaryShaps
+    summary$feature <- factor(summary$feature, levels = summary$feature[order(summary$mean)])
+
+    Plot <- ggplot2::ggplot(summary, ggplot2::aes(x = !!as.name("feature"), y = !!as.name("mean"))) +
       ggplot2::geom_col(fill = "#07B86B", alpha = 0.8) +
-      ggplot2::geom_errorbar(ggplot2::aes(ymin = lci, ymax = uci),
-                             width = 0.2, color = "#7A004BF0",
-                             alpha = 0.75, linewidth = 0.7) +
       ggplot2::coord_flip() +
       ggplot2::xlab("Features\n") +
-      ggplot2::ylab("\nWeighted Mean SHAP Ratio with 95% CI") +
+      ggplot2::ylab("\nWeighted Mean SHAP Ratio") +
       ggplot2::theme_classic()
-  }
 
-  # STEP 3: Plot the local WMSHAP contributions.
-  # ============================================================
-  else {
-    if (is.null(shapley$localShaps)) {
-      # Original H2O plot; the data are contained in contributionPlot.
-      shapley$contributionPlot$data$feature <- factor(
-        shapley$summaryShaps$feature,
-        levels = shapley$summaryShaps$feature[order(shapley$summaryShaps$mean)])
-      Plot <- shapley$contributionPlot
+    # Determine which intervals should be displayed
+    # ============================================================
+    show_bmv <- has_bmv && interval %in% c("bmv", "both", "all")
+    show_bootstrap <- interval %in% c("bootstrap", "both", "all")
+    show_between <- interval %in% c("between_model", "all") ||
+      (interval == "both" && !has_bmv)
+
+    # Original between-model interval
+    # ============================================================
+    if (show_between) {
+      Plot <- Plot + ggplot2::geom_errorbar(
+        ggplot2::aes(ymin = !!as.name("lowerCI"), ymax = !!as.name("upperCI")),
+        width = 0.38, color = "#7A004BF0", alpha = 0.75, linewidth = 0.7
+      )
     }
-    else {
-      # The other backends store the performance-weighted contributions in localShaps.
-      selected <- as.character(shapley$summaryShaps$feature)
-      data <- shapley$localShaps[shapley$localShaps$feature %in% selected, , drop = FALSE]
-      data$feature <- factor(data$feature,
-                             levels = selected[order(shapley$summaryShaps$mean)])
-      # Reuse the contribution plot stored in the shapley object.
-      Plot <- shapley$contributionPlot
-      Plot$data <- data
-      Plot <- Plot + ggplot2::coord_flip()
+
+    # Bootstrap-pooled Between-Model Variability (BMV)
+    # ============================================================
+    if (show_bmv) {
+      Plot <- Plot + ggplot2::geom_errorbar(
+        ggplot2::aes(ymin = !!as.name("bmv_lower"), ymax = !!as.name("bmv_upper")),
+        width = 0.25, color = "#147D64", alpha = 0.9, linewidth = 0.9
+      )
     }
-    Plot <- Plot + ggplot2::ggtitle("") + ggplot2::xlab("Features\n") +
+
+    # Bootstrap confidence interval for the WMSHAP mean
+    # ============================================================
+    if (show_bootstrap) {
+      Plot <- Plot + ggplot2::geom_errorbar(
+        ggplot2::aes(ymin = !!as.name("bootstrap_lowerCI"), ymax = !!as.name("bootstrap_upperCI")),
+        width = 0.12, color = "#225DA8", linewidth = 0.9
+      )
+    }
+
+    # Describe the displayed intervals without labeling BMV as a CI
+    # ============================================================
+    descriptions <- character(0)
+
+    if (show_bmv) descriptions <- c(descriptions, "Green: BMV interval")
+    if (show_bootstrap) descriptions <- c(descriptions, "Blue: bootstrap 95% CI")
+    if (show_between) descriptions <- c(descriptions, "Purple: original between-model interval")
+
+    Plot <- Plot + ggplot2::labs(subtitle = paste(descriptions, collapse = "; "))
+
+  } else {
+
+    # Plot observation-level weighted mean SHAP contributions
+    # ============================================================
+    selected_features <- as.character(shapley$summaryShaps$feature)
+    Plot <- shapley$contributionPlot
+
+    if (!is.null(shapley$localShaps)) {
+      Plot$data <- shapley$localShaps[
+        shapley$localShaps$feature %in% selected_features, , drop = FALSE
+      ]
+    }
+
+    Plot$data$feature <- factor(as.character(Plot$data$feature), levels = rev(selected_features))
+
+    Plot <- Plot +
+      ggplot2::coord_flip() +
+      ggplot2::ggtitle("") +
+      ggplot2::xlab("Features\n") +
       ggplot2::ylab("\nWeighted Mean SHAP contributions") +
       ggplot2::theme_classic() +
       ggplot2::labs(colour = if (is.null(shapley$localShaps)) "Normalized values" else "Feature value") +
       ggplot2::theme(legend.position = "top")
+
     if (length(scale_colour_gradient) == 3L) {
       Plot <- Plot + ggplot2::scale_colour_gradient2(
         low = scale_colour_gradient[1], mid = scale_colour_gradient[2],
-        high = scale_colour_gradient[3], midpoint = 0.5)
+        high = scale_colour_gradient[3], midpoint = 0.5
+      )
     }
   }
+
   if (!is.null(labels)) Plot <- Plot + ggplot2::scale_x_discrete(labels = labels)
+
   print(Plot)
   return(Plot)
 }

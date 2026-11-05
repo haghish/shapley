@@ -58,9 +58,21 @@
 #' @param top_n_features Integer or \code{NULL}. If specified, select the top N features.
 #'                       All features are used to compute global importance ratios;
 #'                       this argument controls feature selection afterwards.
+#'
+#' @param bootstrap Integer. Number of observation-level bootstrap replications
+#'   used to estimate sampling variability in WMSHAP and Between-Model Variability
+#'   (BMV). The default is \code{0L}, which disables bootstrapping. For each
+#'   bootstrap sample, the function recalculates the model-specific SHAP
+#'   importance ratios, their performance-weighted mean, and between-model
+#'   standard deviation. The root mean square of the bootstrap between-model
+#'   standard deviations is used to construct a descriptive BMV interval.
+#'   The function also estimates bootstrap standard errors and percentile
+#'   95\% confidence intervals for WMSHAP and the between-model SD.
+#'
 #' @param sample_size Integer. Number of rows in \code{newdata} used for SHAP assessment.
-#'                    Defaults to 1000 rows. Increasing this can slows down WMSHAP computation,
-#'                    but improves its accuracy and stability.
+#'                    Defaults to number of rows in the newdata. Decreasing this
+#'                    can increase the computation speed,
+#'                    but decreases accuracy and stability of WMSHAP.
 #'                    Note that for 'shapr' package, this argument defines of Monte Carlo samples
 #'   passed to \code{shapr::explain()}.
 #' @param plot Logical. If \code{TRUE}, plots the WMSHAP summary using \code{shapley.plot()}.
@@ -93,6 +105,10 @@
 #'   \code{"timeseries"}, \code{"regression_separate"}, and
 #'   \code{"regression_surrogate"}. The default is
 #'   \code{"empirical"}.
+#' @param shapr_monte_carlo Integer. Number of Monte Carlo samples used to estimate
+#'   SHAP values when \code{backend = "shapr"}. Larger values may improve the
+#'   precision of SHAP estimates but increase computation time. The default
+#'   is \code{1000L}. This argument is ignored when other SHAP backends are used.
 #' @param n_core Integer. Number of parallel R workers for computing SHAP
 #'   contributions across fitted models. The default \code{-1} uses all
 #'   detected physical CPU cores, limited to the number of models. Use
@@ -118,7 +134,7 @@
 #'   \item{weights}{Legacy rescaled model weights (sum equals the number of models).}
 #'   \item{model_weights}{Normalized model-performance weights (sum equals 1).}
 #'   \item{results}{Data frame of row-level SHAP contributions across models.}
-#'   \item{summaryShaps}{Data frame of global WMSHAP ratios and intervals.}
+#'   \item{summaryShaps}{Data frame of global WMSHAP ratios and intervals as well as bootstrap summary statistics, if applied.}
 #'   \item{selectedFeatures}{Character vector of selected important features.}
 #'   \item{feature_importance}{List of feature importance values by model.}
 #'   \item{contributionPlot}{Plot data for local SHAP contributions.}
@@ -129,6 +145,7 @@
 #'   \item{explanation_scope}{For native GPBoost SHAP, \code{"gpboost_tree_component"}.
 #'         This excludes random effects and Gaussian-process contributions.}
 #' }
+#'
 #' @note SHAP values from different backends are only directly comparable if they
 #'   explain the same prediction output and use compatible feature-dependence assumptions.
 #'   The intervals summarize between-model variation, not population uncertainty.
@@ -221,7 +238,7 @@
 #'   dplyr::arrange(dplyr::desc(mean))
 #'
 #' # 4: select the near-optimal configurations. for example,
-#' # retain top models with at least 98% of the best mean AUCPR.
+#' # retain top models with at least 98\% of the best mean AUCPR.
 #' near <- scores |>
 #'   dplyr::filter(mean >= 0.98 * max(scores$mean))
 #'
@@ -301,6 +318,7 @@
 #' @export
 #' @author E. F. Haghish
 
+
 shapley <- function(models,
                     newdata,
                     background_data = NULL,
@@ -308,91 +326,115 @@ shapley <- function(models,
                     model_performance = NULL,
                     performance_metric = "r2",
                     backend = "auto",
-
-
-                    sample_size = 1000L,
+                    sample_size = nrow(newdata),
+                    bootstrap = 0L,
                     n_core = -1L,
                     cutoff = 0,
                     plot = TRUE,
-
                     top_n_features = NULL,
                     target_class = NULL,
 
-                    #shapr arguments
+                    # shapr arguments
                     shapr_method = "empirical",
-                    ...
-                    ) {
+                    shapr_monte_carlo = 1000L,
+                    ...) {
 
-  # check the ... arguments
+  # Check additional arguments
   # ============================================================
   hidden_args <- c("minimum_performance", "n_models", "shapr_phi0", "method")
-  stopifnot("incompatible '...' arguments" = (names(list(...)) %in% hidden_args))
-  minimum_performance    <- threeDots(name = "minimum_performance", ..., default = 0)
-  n_models               <- threeDots(name = "n_models", ..., default = 2)
-  shapr_phi0             <- threeDots(name = "shapr_phi0", ..., default = NULL)
-  method                 <- threeDots(name = "method", ..., default = "mean")
 
-  # if backend is shapr, change the default of sample_size
-  if (backend == "shapr") {
-    if (is.null(sample_size)) {
-      message("shapr requires the 'sample_size' argument, which is set to NULL")
-      sample_size <- 1000L
-    }
+  stopifnot("incompatible '...' arguments" = (names(list(...)) %in% hidden_args))
+
+  minimum_performance <- threeDots(name = "minimum_performance", ..., default = 0)
+  n_models <- threeDots(name = "n_models", ..., default = 2)
+  shapr_phi0 <- threeDots(name = "shapr_phi0", ..., default = NULL)
+  method <- threeDots(name = "method", ..., default = "mean")
+
+  # Validate bootstrap settings
+  # ============================================================
+  if (!is.numeric(bootstrap) || length(bootstrap) != 1L || !is.finite(bootstrap) ||
+      bootstrap < 0L || bootstrap == 1L || bootstrap != floor(bootstrap)) {
+    stop("'bootstrap' must be 0 or an integer greater than or equal to 2", call. = FALSE)
   }
 
-  # WMSHAP requires at least two fitted models.
+  bootstrap <- as.integer(bootstrap)
+
+  # Validate the minimum number of models
   # ============================================================
-  if (length(n_models) != 1L || !is.numeric(n_models) ||
-      !is.finite(n_models) || n_models < 2 ||
-      n_models != as.integer(n_models)) {
+  if (length(n_models) != 1L || !is.numeric(n_models) || !is.finite(n_models) ||
+      n_models < 2L || n_models != floor(n_models)) {
     stop("'n_models' must be an integer greater than or equal to 2 for WMSHAP")
   }
+
   n_models <- as.integer(n_models)
 
-  # STEP 0: Determine the number of model-level workers.
+  # Validate selection method
+  # ============================================================
+  if (!method %in% c("mean", "lowerCI", "bootstrap_lowerCI", "bmv_lower")) {
+    stop("'method' must be 'mean', 'lowerCI', 'bootstrap_lowerCI', or 'bmv_lower'")
+  }
+
+  if (method %in% c("bootstrap_lowerCI", "bmv_lower") && bootstrap == 0L) {
+    stop("The selected method requires bootstrap >= 2")
+  }
+
+  # Determine the number of parallel workers
   # ============================================================
   n_core <- shapley.cores(n_core)
 
-  # STEP 1: Identify the SHAP backend.
+  # Identify the SHAP backend and model types
   # ============================================================
   backend <- match.arg(backend, c("auto", "h2o", "gpboost", "treeshap", "kernelshap", "shapr"))
   model_info <- shapley.models(models)
 
-  # STEP 1: Keep the original H2O computation unchanged.
+  # Compute WMSHAP for H2O models
   # ============================================================
   if (model_info$h2o) {
+
     if (!requireNamespace("h2o", quietly = TRUE)) {
       stop("Package 'h2o' is required for H2O models. Install it with install.packages('h2o').")
     }
+
     if (!backend %in% c("auto", "h2o")) {
       stop("H2O models require backend = 'h2o' or 'auto'")
     }
+
     if (!is.null(model_performance)) {
       stop("H2O already retrieves performance estimates. Leave 'model_performance' as NULL.")
     }
+
     return(shapley.h2o(
-      models = models, newdata = newdata, plot = plot,
+      models = models,
+      newdata = newdata,
+      plot = plot,
       performance_metric = performance_metric,
       performance_type = "xval",
       minimum_performance = minimum_performance,
-      method = method, cutoff = cutoff,
+      method = method,
+      cutoff = cutoff,
       top_n_features = top_n_features,
       n_models = n_models,
       sample_size = sample_size,
-      n_core = n_core
+      n_core = n_core,
+      bootstrap = bootstrap
     ))
   }
 
-  # STEP 2: Use native GPBoost SHAP, TreeSHAP, Kernel SHAP, or shapr.
+  # Compute WMSHAP for non-H2O models
   # ============================================================
   if (backend == "h2o") stop("Only H2O models use the H2O backend")
+
   return(shapley.external(
-    models = models, newdata = newdata, plot = plot,
+    models = models,
+    newdata = newdata,
+    plot = plot,
     performance_metric = performance_metric,
     minimum_performance = minimum_performance,
-    method = method, cutoff = cutoff,
+    method = method,
+    cutoff = cutoff,
     top_n_features = top_n_features,
-    n_models = n_models, sample_size = sample_size,
+    n_models = n_models,
+    sample_size = sample_size,
     shap_backend = backend,
     background_data = background_data,
     pred_fun = pred_fun,
@@ -400,7 +442,9 @@ shapley <- function(models,
     target_class = target_class,
     shapr_approach = shapr_method,
     shapr_phi0 = shapr_phi0,
-    shapr_n_MC_samples = sample_size,
-    n_core = n_core
+    shapr_n_MC_samples = shapr_monte_carlo,
+    n_core = n_core,
+    bootstrap = bootstrap
   ))
 }
+
