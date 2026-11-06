@@ -3,50 +3,57 @@
 export(h2o.get_ids)
 export(shapley)
 export(shapley.domain)
+export(shapley.domain.compare.test)
 export(shapley.domain.test)
 export(shapley.feature.test)
 export(shapley.plot)
 export(shapley.row.plot)
 export(shapley.table)
 export(shapley.top)
-importFrom(curl,curl)
-importFrom(ggplot2,aes)
-importFrom(ggplot2,coord_flip)
-importFrom(ggplot2,element_text)
-importFrom(ggplot2,expansion)
-importFrom(ggplot2,geom_col)
-importFrom(ggplot2,geom_errorbar)
-importFrom(ggplot2,geom_hline)
-importFrom(ggplot2,ggplot)
-importFrom(ggplot2,ggtitle)
-importFrom(ggplot2,guide_colourbar)
-importFrom(ggplot2,guide_legend)
-importFrom(ggplot2,guides)
-importFrom(ggplot2,labs)
-importFrom(ggplot2,margin)
-importFrom(ggplot2,scale_colour_gradient2)
-importFrom(ggplot2,scale_x_discrete)
-importFrom(ggplot2,scale_y_continuous)
-importFrom(ggplot2,theme)
-importFrom(ggplot2,theme_classic)
-importFrom(ggplot2,xlab)
-importFrom(ggplot2,ylab)
-importFrom(h2o,h2o.F2)
-importFrom(h2o,h2o.accuracy)
-importFrom(h2o,h2o.auc)
-importFrom(h2o,h2o.aucpr)
-importFrom(h2o,h2o.getModel)
-importFrom(h2o,h2o.get_leaderboard)
-importFrom(h2o,h2o.giniCoef)
-importFrom(h2o,h2o.mean_per_class_error)
-importFrom(h2o,h2o.r2)
-importFrom(h2o,h2o.shap_summary_plot)
-importFrom(h2o,h2o.stackedEnsemble)
+importFrom(ggplot2,
+  aes,
+  coord_flip,
+  element_text,
+  expansion,
+  geom_col,
+  geom_errorbar,
+  geom_hline,
+  ggplot,
+  ggtitle,
+  guide_colourbar,
+  guide_legend,
+  guides,
+  labs,
+  margin,
+  scale_colour_gradient2,
+  scale_x_discrete,
+  scale_y_continuous,
+  theme,
+  theme_classic,
+  xlab,
+  ylab
+)
+importFrom(h2o,
+  h2o.F2,
+  h2o.auc,
+  h2o.aucpr,
+  h2o.getModel,
+  h2o.get_leaderboard,
+  h2o.r2,
+  h2o.shap_summary_plot
+)
 importFrom(pander,pander)
-importFrom(stats,aggregate)
-importFrom(stats,formula)
-importFrom(stats,na.omit)
-importFrom(stats,weighted.mean)
-importFrom(utils,globalVariables)
-importFrom(utils,setTxtProgressBar)
-importFrom(utils,txtProgressBar)
+importFrom(stats,
+  aggregate,
+  formula,
+  na.omit,
+  predict,
+  setNames,
+  weighted.mean
+)
+importFrom(utils,
+  globalVariables,
+  head,
+  setTxtProgressBar,
+  txtProgressBar
+)

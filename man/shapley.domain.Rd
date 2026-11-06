@@ -27,72 +27,10 @@ each element value is a character vector of feature names assigned to that domai
 
 \item{xlab}{Character. Specify the ggplot 'xlab' label in the plot (default is "Domains")}
 }
-\value{
-A list with:
-\describe{
-  \item{domainSummary}{Data frame with WMSHAP domain contributions and CI.}
-  \item{domainRatio}{Data frame with per-model WMSHAP domain contribution ratios.}
-  \item{plot}{A ggplot object (or NULL if plotting not requested/implemented).}
-}
-}
 \description{
 Aggregates SHAP contributions across user-defined domains (groups of features),
-             computes weighted mean and an 95% CI across models, and
-             returns a plot plus summary tables.
-}
-\examples{
-
-\dontrun{
-# load the required libraries for building the base-learners and the ensemble models
-library(h2o)            #shapley supports h2o models
-library(shapley)
-
-# initiate the h2o server
-h2o.init(ignore_config = TRUE, nthreads = 2, bind_to_localhost = FALSE, insecure = TRUE)
-
-# upload data to h2o cloud
-prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-prostate <- h2o.importFile(path = prostate_path, header = TRUE)
-
-### H2O provides 2 types of grid search for tuning the models, which are
-### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
-### can be computed for both types.
-
-set.seed(10)
-
-#######################################################
-### PREPARE AutoML Grid (takes a couple of minutes)
-#######################################################
-# run AutoML to tune various models (GBM) for 60 seconds
-y <- "CAPSULE"
-prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
-aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
-                 include_algos=c("GBM"),
-
-                 # this setting ensures the models are comparable for building a meta learner
-                 seed = 2023, nfolds = 10,
-                 keep_cross_validation_predictions = TRUE)
-
-### call 'shapley' function to compute the weighted mean and weighted confidence intervals
-### of SHAP values across all trained models.
-### Note that the 'newdata' should be the testing dataset!
-result <- shapley(models = aml, newdata = prostate, plot = TRUE)
-
-#######################################################
-### PLOT THE WEIGHTED MEAN SHAP VALUES
-#######################################################
-
-shapley.plot(result, plot = "bar")
-
-#######################################################
-### DEFINE DOMAINS (GROUPS OF FEATURES OR FACTORS)
-#######################################################
-shapley.domain(shapley = result, plot = TRUE,
-               domains = list(Demographic = c("RACE", "AGE"),
-                              Cancer = c("VOL", "PSA", "GLEASON"),
-                              Tests = c("DPROS", "DCAPS")),
-                              print = TRUE)
-}
+             computes weighted means and descriptive between-model
+             intervals, and returns a plot plus summary tables.
 }
 \author{
 E. F. Haghish

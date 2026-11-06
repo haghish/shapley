@@ -37,6 +37,8 @@
 #'                           Default is \code{120}.
 #' @param split.cells        Integer. Controls cell splitting in \code{pander()}.
 #'                           Default is \code{50}.
+#' @param interval Interval type to display: \code{"auto"}, \code{"bmv"},
+#'   \code{"bootstrap"}, and \code{"between_model"}.
 #'
 #' @return If \code{markdown.table = TRUE}, returns a markdown table (invisibly)
 #'         showing two columns: \code{"Description"} and \code{"WMSHAP"}. If
@@ -125,6 +127,8 @@
 #' @export
 #' @author E. F. Haghish
 
+
+
 shapley.table <- function(shapley,
                           method = "mean",
                           cutoff = 0.01,
@@ -133,57 +137,107 @@ shapley.table <- function(shapley,
                           dict = NULL,
                           markdown.table = TRUE,
                           split.tables = 120,
-                          split.cells = 50) {
+                          split.cells = 50,
+                          interval = "auto") {
 
-  # Exclude features that do not meet the criteria
-  # ====================================================
+  # Prepare the summary table and determine the interval type
+  # ============================================================
   summaryShaps <- shapley$summaryShaps
-  summaryShaps <- summaryShaps[summaryShaps[, method] >= cutoff, ]
-  summaryShaps <- summaryShaps[!summaryShaps[,"feature"] %in% exclude_features, ]
+  interval <- match.arg(interval, c("auto", "bmv", "bootstrap", "between_model", "both", "all"))
 
+  has_bootstrap <- all(c("bootstrap_lowerCI", "bootstrap_upperCI") %in% names(summaryShaps))
+  has_bmv <- all(c("bmv_lower", "bmv_upper") %in% names(summaryShaps))
 
-  # Sort the results
-  summaryShaps <- summaryShaps[order(summaryShaps$mean, decreasing = TRUE), ]
-  summaryShaps[, c("mean", "lowerCI", "upperCI")] <- round(summaryShaps[, c("mean", "lowerCI", "upperCI")], round)
-  included_features <- summaryShaps$feature
-  #View(summaryShaps)
+  if (interval == "auto") interval <- if (has_bmv) "bmv" else "between_model"
 
+  if (interval %in% c("bmv", "all") && !has_bmv) {
+    stop("BMV is unavailable. Enable bootstrapping in shapley().", call. = FALSE)
+  }
 
-  # Prepare a table
-  # ====================================================
-  Confidence <- paste0(summaryShaps$lowerCI, " - ", summaryShaps$upperCI)
-  summaryShaps$WMSHAP <- paste0(summaryShaps$mean, " (", Confidence, ")")
-  summaryShaps <- summaryShaps[,c("feature","WMSHAP")]
+  if (interval %in% c("bootstrap", "both", "all") && !has_bootstrap) {
+    stop("Bootstrap intervals are unavailable. Enable bootstrapping in shapley().", call. = FALSE)
+  }
 
-  # Add item description
-  # ====================================================
+  # Select features according to the specified criterion
+  # ============================================================
+  if (!method %in% c("mean", "lowerCI", "bootstrap_lowerCI", "bmv_lower") ||
+      !method %in% names(summaryShaps)) {
+    stop("Invalid or unavailable feature-selection method", call. = FALSE)
+  }
+
+  keep <- !is.na(summaryShaps[[method]]) & summaryShaps[[method]] >= cutoff
+
+  summaryShaps <- summaryShaps[
+    keep & !summaryShaps$feature %in% exclude_features, , drop = FALSE
+  ]
+
+  summaryShaps <- summaryShaps[order(summaryShaps$mean, decreasing = TRUE), , drop = FALSE]
+
+  # Format WMSHAP estimates and intervals
+  # ============================================================
+  fmt <- function(x) format(base::round(x, round), nsmall = round, trim = TRUE)
+  fmt_interval <- function(lower, upper) paste0(fmt(lower), " - ", fmt(upper))
+
+  point <- fmt(summaryShaps$mean)
+
+  # Add feature descriptions
+  # ============================================================
+  descriptions <- as.character(summaryShaps$feature)
+
   if (!is.null(dict)) {
-    summaryShaps$Description <- sapply(summaryShaps$feature, function(x) {
-      if (x %in% dict$name) {
-        dict$description[dict$name == x]
-      } else {
-        paste(x)
-      }
-    })
+
+    if (!all(c("name", "description") %in% names(dict))) {
+      stop("'dict' must contain columns 'name' and 'description'", call. = FALSE)
+    }
+
+    position <- match(descriptions, dict$name)
+    found <- !is.na(position)
+    descriptions[found] <- as.character(dict$description[position[found]])
   }
-  else summaryShaps$Description <- summaryShaps$feature
 
+  # Construct the final table
+  # ============================================================
+  output <- data.frame(Description = descriptions, WMSHAP = point, check.names = FALSE)
 
+  if (interval == "between_model") {
 
-  rownames(summaryShaps) <- NULL
+    # Preserve the original two-column output when no bootstrap is requested.
+    output$WMSHAP <- paste0(
+      point, " (", fmt_interval(summaryShaps$lowerCI, summaryShaps$upperCI), ")"
+    )
 
-  # make R avoid scientific number notation
+  } else {
 
+    if (interval %in% c("bmv", "both", "all") && has_bmv) {
+      output[["BMV interval"]] <- fmt_interval(summaryShaps$bmv_lower, summaryShaps$bmv_upper)
+    }
+
+    if (interval %in% c("bootstrap", "both", "all")) {
+      output[["Bootstrap 95% CI"]] <- fmt_interval(
+        summaryShaps$bootstrap_lowerCI, summaryShaps$bootstrap_upperCI
+      )
+    }
+
+    if (interval == "all" || (interval == "both" && !has_bmv)) {
+      output[["Original between-model interval"]] <- fmt_interval(
+        summaryShaps$lowerCI, summaryShaps$upperCI
+      )
+    }
+  }
+
+  rownames(output) <- NULL
+
+  # Return a markdown table or data frame
+  # ============================================================
   if (markdown.table) {
-    return(pander(summaryShaps[, c("Description", "WMSHAP")],
-                  justify = "left",
-                  split.tables = 120,
-                  split.cells = 80))
+    return(pander::pander(output, justify = "left",
+                          split.tables = split.tables, split.cells = split.cells))
   }
-  else {
-    return(summaryShaps[, c("Description", "WMSHAP")])
-  }
+
+  return(output)
 }
+
+
 
 #shapley.table(shapley, method = "mean", cutoff = 0.01, dict = dictionary(raw, attribute = "label"))
 #shapley.table(shapley, method = "mean", cutoff = 0.01, dict = dict)

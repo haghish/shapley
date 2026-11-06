@@ -2,7 +2,7 @@
 % Please edit documentation in R/shapley.plot.R
 \name{shapley.plot}
 \alias{shapley.plot}
-\title{Plot weighted mean SHAP (WMSHAP) contributions}
+\title{Plot Global WMSHAP Values}
 \usage{
 shapley.plot(
   shapley,
@@ -13,91 +13,42 @@ shapley.plot(
   features = NULL,
   legendstyle = "continuous",
   scale_colour_gradient = NULL,
-  labels = NULL
+  labels = NULL,
+  interval = "auto"
 )
 }
 \arguments{
-\item{shapley}{object of class \code{"shapley"}, as returned by the 'shapley' function}
+\item{shapley}{An object returned by \code{shapley()}.}
 
-\item{plot}{Character. One of \code{"bar"} or \code{"wmshap"}.}
+\item{plot}{Plot type: \code{"bar"} or \code{"wmshap"}.}
 
-\item{method}{Character. One of \code{"mean"} or \code{"lowerCI"}; used by
-\code{feature.selection()} for feature selection
-when \code{top_n_features} or \code{features} are not set.}
+\item{method}{Feature selection method: \code{"mean"}, \code{"lowerCI"},
+\code{"bootstrap_lowerCI"}, or \code{"bmv_lower"}.}
 
-\item{cutoff}{Numeric cutoff for \code{method} selection.}
+\item{cutoff}{Minimum global WMSHAP ratio or lower confidence interval.}
 
-\item{top_n_features}{Integer. If set, selects top N features by WMSHAP
-(overrides cutoff and method arguments).}
+\item{top_n_features}{Optional number of features to plot.}
 
-\item{features}{Character vector, specifying the feature to be plotted
-(overrides cutoff and method arguments).}
+\item{features}{Optional character vector of features to plot.}
 
-\item{legendstyle}{Character. For \code{plot = "wmshap"} only: \code{"continuous"} (default)
-or \code{"discrete"}.}
+\item{legendstyle}{Legend type used for the contribution plot.}
 
-\item{scale_colour_gradient}{Optional character vector of length 3, specifying
-color names: \code{c(low, mid, high)}.
-Used only when \code{plot = "wmshap"}.}
+\item{scale_colour_gradient}{Optional colour vector for the contribution plot.}
 
-\item{labels}{Optional named character vector mapping feature names to display labels.
-To specify the labels, use the \code{c} function and for each feature,
-provide a label. For example, \code{c(feature1 = label2, feature2 = label2, ...)}.}
+\item{labels}{Optional feature labels.}
+
+\item{interval}{Interval type to display: \code{"auto"}, \code{"bmv"},
+\code{"bootstrap"}, \code{"between_model"}, \code{"both"},
+or \code{"all"}.}
 }
 \value{
-A ggplot object
+A ggplot object.
 }
 \description{
-Visualizes WMSHAP summaries from a \code{shapley} object. Features can be selected
-             using \code{method} and \code{method/cutoff}, \code{top_n_features},
-             or explicit \code{features} to specify feature selection method.
-}
-\examples{
-
-\dontrun{
-# load the required libraries for building the base-learners and the ensemble models
-library(h2o)            #shapley supports h2o models
-library(shapley)
-
-# initiate the h2o server
-h2o.init(ignore_config = TRUE, nthreads = 2, bind_to_localhost = FALSE, insecure = TRUE)
-
-# upload data to h2o cloud
-prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-prostate <- h2o.importFile(path = prostate_path, header = TRUE)
-
-### H2O provides 2 types of grid search for tuning the models, which are
-### AutoML and Grid. Below, I demonstrate how weighted mean shapley values
-### can be computed for both types.
-
-set.seed(10)
-
-#######################################################
-### PREPARE AutoML Grid (takes a couple of minutes)
-#######################################################
-# run AutoML to tune various models (GBM) for 60 seconds
-y <- "CAPSULE"
-prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
-aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 120,
-                 include_algos=c("GBM"),
-
-                 # this setting ensures the models are comparable for building a meta learner
-                 seed = 2023, nfolds = 10,
-                 keep_cross_validation_predictions = TRUE)
-
-### call 'shapley' function to compute the weighted mean and weighted confidence intervals
-### of SHAP values across all trained models.
-### Note that the 'newdata' should be the testing dataset!
-result <- shapley(models = aml, newdata = prostate, plot = TRUE)
-
-#######################################################
-### PLOT THE WEIGHTED MEAN SHAP VALUES
-#######################################################
-
-shapley.plot(result, plot = "bar")
-shapley.plot(result, plot = "wmshap")
-}
-}
-\author{
-E. F. Haghish
+Plot global feature importance using Weighted Mean SHAP ratios
+  or plot individual-level weighted mean SHAP contributions. The bootstrap
+  percentile confidence intervals are distinct from descriptive
+  between-model and BMV intervals. The WMSHAP contribution plot uses
+  density-based jitter and the classic plot styling of the original
+  H2O implementation of the shapley package.
 }
