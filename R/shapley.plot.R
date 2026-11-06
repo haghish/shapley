@@ -3,7 +3,9 @@
 #' @description Plot global feature importance using Weighted Mean SHAP ratios
 #'   or plot individual-level weighted mean SHAP contributions. The bootstrap
 #'   percentile confidence intervals are distinct from descriptive
-#'   between-model and BMV intervals.
+#'   between-model and BMV intervals. The WMSHAP contribution plot uses
+#'   density-based jitter and the classic plot styling of the original
+#'   H2O implementation of the shapley package.
 #' @param shapley An object returned by \code{shapley()}.
 #' @param plot Plot type: \code{"bar"} or \code{"wmshap"}.
 #' @param method Feature selection method: \code{"mean"}, \code{"lowerCI"},
@@ -80,12 +82,20 @@ shapley.plot <- function(shapley,
     summary <- shapley$summaryShaps
     summary$feature <- factor(summary$feature, levels = summary$feature[order(summary$mean)])
 
+    bar_fill <- if (has_bootstrap) "#08B2BC" else "#07B86B"
+
     Plot <- ggplot2::ggplot(summary, ggplot2::aes(x = !!as.name("feature"), y = !!as.name("mean"))) +
-      ggplot2::geom_col(fill = "#07B86B", alpha = 0.8) +
+      ggplot2::geom_col(fill = bar_fill, alpha = 0.8) +
       ggplot2::coord_flip() +
+      ggplot2::ggtitle("") +
       ggplot2::xlab("Features\n") +
       ggplot2::ylab("\nWeighted Mean SHAP Ratio") +
-      ggplot2::theme_classic()
+      ggplot2::theme_classic() +
+      ggplot2::theme(
+        plot.margin = ggplot2::margin(t = -0.5, r = 0.25, b = 0.25,
+                                      l = 0.25, unit = "cm")
+      ) +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
 
     # Determine which intervals should be displayed
     # ============================================================
@@ -99,7 +109,7 @@ shapley.plot <- function(shapley,
     if (show_between) {
       Plot <- Plot + ggplot2::geom_errorbar(
         ggplot2::aes(ymin = !!as.name("lowerCI"), ymax = !!as.name("upperCI")),
-        width = 0.38, color = "#7A004BF0", alpha = 0.75, linewidth = 0.7
+        width = 0.2, color = "#7A004BF0", alpha = 0.75, linewidth = 0.7
       )
     }
 
@@ -108,7 +118,7 @@ shapley.plot <- function(shapley,
     if (show_bmv) {
       Plot <- Plot + ggplot2::geom_errorbar(
         ggplot2::aes(ymin = !!as.name("bmv_lower"), ymax = !!as.name("bmv_upper")),
-        width = 0.25, color = "#147D64", alpha = 0.9, linewidth = 0.9
+        width = 0.25, color = "#74518F", alpha = 0.9, linewidth = 0.9
       )
     }
 
@@ -125,9 +135,9 @@ shapley.plot <- function(shapley,
     # ============================================================
     descriptions <- character(0)
 
-    if (show_bmv) descriptions <- c(descriptions, "Green: descriptive BMV interval")
-    if (show_bootstrap) descriptions <- c(descriptions, "Blue: bootstrap percentile 95% CI")
-    if (show_between) descriptions <- c(descriptions, "Purple: descriptive between-model interval")
+    # if (show_bmv) descriptions <- c(descriptions, "Green: descriptive BMV interval")
+    # if (show_bootstrap) descriptions <- c(descriptions, "Blue: bootstrap percentile 95% CI")
+    # if (show_between) descriptions <- c(descriptions, "Purple: descriptive between-model interval")
 
     Plot <- Plot + ggplot2::labs(subtitle = paste(descriptions, collapse = "; "))
 
@@ -146,14 +156,45 @@ shapley.plot <- function(shapley,
 
     Plot$data$feature <- factor(as.character(Plot$data$feature), levels = rev(selected_features))
 
+    # Apply the styling from the original shapley.plot() implementation.
+    # The contribution plot already includes density-based jitter and a
+    # dashed zero line. Keep these layers and the signed WMSHAP values.
     Plot <- Plot +
-      ggplot2::coord_flip() +
       ggplot2::ggtitle("") +
       ggplot2::xlab("Features\n") +
       ggplot2::ylab("\nWeighted Mean SHAP contributions") +
+      ggplot2::labs(colour = "Normalized values") +
       ggplot2::theme_classic() +
-      ggplot2::labs(colour = if (is.null(shapley$localShaps)) "Normalized values" else "Feature value") +
-      ggplot2::theme(legend.position = "top")
+      ggplot2::theme(
+        legend.position = "top",
+        legend.justification = "right",
+        legend.title.align = 0.5,
+        legend.direction = "horizontal",
+        legend.text = ggplot2::element_text(colour = "black", size = 6, face = "bold"),
+        legend.key.height = grid::unit(0.3, "cm"),
+        legend.key.width = grid::unit(1, "cm"),
+        legend.margin = ggplot2::margin(t = 0, r = 0, b = 0, l = 0, unit = "cm"),
+        plot.margin = ggplot2::margin(t = -0.5, r = 0.25, b = 0.25,
+                                      l = 0.25, unit = "cm")
+      )
+
+    if (legendstyle == "continuous") {
+      Plot <- Plot + ggplot2::guides(
+        colour = ggplot2::guide_colourbar(title.position = "top", title.hjust = 0.5)
+      )
+    } else if (legendstyle == "discrete") {
+      Plot <- Plot +
+        ggplot2::guides(colour = ggplot2::guide_legend(
+          title.position = "top", title.hjust = 0.5,
+          override.aes = list(size = 3)
+        )) +
+        ggplot2::theme(
+          legend.key.height = grid::unit(0.4, "cm"),
+          legend.key.width = grid::unit(0.4, "cm")
+        )
+    } else {
+      stop("'legendstyle' must be 'continuous' or 'discrete'", call. = FALSE)
+    }
 
     if (length(scale_colour_gradient) == 3L) {
       Plot <- Plot + ggplot2::scale_colour_gradient2(

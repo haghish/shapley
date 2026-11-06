@@ -1,7 +1,7 @@
 Package: shapley
 Type: Package
-Title: Weighted Mean SHAP and CI for Robust Feature Assessment in ML Grid
-Version: 0.8.0
+Title: Weighted Mean SHAP (WMSHAP) and CI for Robust Multi-Model Feature Assessment
+Version: 1.0.0
 Authors@R:
     person("E. F. Haghish",
            role = c("aut", "cre", "cph"),

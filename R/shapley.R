@@ -184,8 +184,11 @@
 #'                  hyper_params = list(ntrees = seq(1, 50)),
 #'                  grid_id = "ensemble_grid", nfolds = 10,
 #'                  keep_cross_validation_predictions = TRUE)
-#' result <- shapley(models = grid, newdata = prostate,
-#'                   performance_metric = "aucpr")
+#'
+#' result <- shapley(models = grid,
+#'                   newdata = prostate,
+#'                   performance_metric = "aucpr",
+#'                   bootstrap = 100)
 #'
 #' # ============================================================
 #' # An Example Using ranger Package
@@ -267,6 +270,7 @@
 #'   performance_metric = "aucpr",
 #'   backend = "treeshap",
 #'   target_class = "1",
+#'   bootstrap = 100,
 #'   plot = TRUE
 #' )
 #'
@@ -286,6 +290,7 @@
 #'   backend = "kernelshap",
 #'   pred_fun = pred_fun,
 #'   target_class = "1",
+#'   bootstrap = 100,
 #'   n_core = 4,
 #'   plot = FALSE
 #' )
@@ -302,7 +307,8 @@
 #'   pred_fun = pred_fun,
 #'   target_class = "1",
 #'   shapr_method = "empirical",
-#'   sample_size = 1000,
+#'   bootstrap = 100,
+#'   shapr_monte_carlo = 1000,
 #'   plot = TRUE
 #' )
 #'

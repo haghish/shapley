@@ -22,7 +22,8 @@ shapley.plot(
 
 \item{plot}{Plot type: \code{"bar"} or \code{"wmshap"}.}
 
-\item{method}{Feature selection method: \code{"mean"} or \code{"lowerCI"}.}
+\item{method}{Feature selection method: \code{"mean"}, \code{"lowerCI"},
+\code{"bootstrap_lowerCI"}, or \code{"bmv_lower"}.}
 
 \item{cutoff}{Minimum global WMSHAP ratio or lower confidence interval.}
 
@@ -37,12 +38,17 @@ shapley.plot(
 \item{labels}{Optional feature labels.}
 
 \item{interval}{Interval type to display: \code{"auto"}, \code{"bmv"},
-\code{"bootstrap"}, and \code{"between_model"}.}
+\code{"bootstrap"}, \code{"between_model"}, \code{"both"},
+or \code{"all"}.}
 }
 \value{
 A ggplot object.
 }
 \description{
 Plot global feature importance using Weighted Mean SHAP ratios
-  or plot the individual-level weighted mean SHAP contributions.
+  or plot individual-level weighted mean SHAP contributions. The bootstrap
+  percentile confidence intervals are distinct from descriptive
+  between-model and BMV intervals. The WMSHAP contribution plot uses
+  density-based jitter and the classic plot styling of the original
+  H2O implementation of the shapley package.
 }

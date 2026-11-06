@@ -29,8 +29,8 @@ each element value is a character vector of feature names assigned to that domai
 }
 \description{
 Aggregates SHAP contributions across user-defined domains (groups of features),
-             computes weighted mean and an 95% CI across models, and
-             returns a plot plus summary tables.
+             computes weighted means and descriptive between-model
+             intervals, and returns a plot plus summary tables.
 }
 \author{
 E. F. Haghish
