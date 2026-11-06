@@ -1,7 +1,7 @@
 
 > - __Citation__: _Haghish, E. F. (2023). shapley: Weighted Mean SHAP (WMSHAP) for Feature Assessment in ML Grid and Ensemble [computer software]_. URL: <https://CRAN.R-project.org/package=shapley>
-> - __Abstract__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP)_. URL:<https://doi.org/10.5281/zenodo.21920982>
-> - __Article__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP): A Near-Optimal Model-Set Approach to Feature Importance Assessment_. URL: <https://doi.org/10.13140/RG.2.2.24960.19203>
+> - __Conference Abstract__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP)_. URL:<https://doi.org/10.5281/zenodo.21920982>
+> - __Article I__: _Haghish, E. F. (2026): Weighted Mean SHapley Additive exPlanations (WMSHAP): A Near-Optimal Model-Set Approach to Feature Importance Assessment_. URL: <https://doi.org/10.13140/RG.2.2.24960.19203>
 - - -
 
 
