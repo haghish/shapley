@@ -8,7 +8,7 @@
 <a href="https://github.com/haghish/shapley"><img src='man/figures/shapley.png' align="right" height="200" /></a>
 <br>
   
-  __`shapley`__ : Weighted Mean SHAP (WMSHAP) for Robust Multi-Model Feature Importance Assessment and Selection in Machine Learning Grids
+  __`shapley`__ : Weighted Mean SHAP (WMSHAP) for Robust Multi-Model Feature Importance Assessment and Feature Selection in Machine Learning Grids
 ================================================================================
 
 [![](https://www.r-pkg.org/badges/version/shapley?color=02C6F2)](https://cran.r-project.org/package=shapley)
